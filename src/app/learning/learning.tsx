@@ -13,6 +13,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardNav from '@/components/DashboardNav';
+import { articleSchema } from '../api/ai/generate-lessons/schema';
+import { experimental_useObject as useObject } from "@ai-sdk/react";
+import type { SaveProgressRequest, SaveProgressResponse, ApiError } from '@/types/learning';
 
 const categories = [
   { id: 'budgeting', name: 'Budgeting Basics', icon: '💰', color: 'bg-blue-500/10 text-blue-600' },
@@ -31,18 +34,25 @@ const Learning:React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const [submittingQuiz, setSubmittingQuiz] = useState(false);
+
+  const { submit, object, isLoading, error, stop } = useObject({
+    api: "/api/ai/generate-lessons",
+    schema: articleSchema,
+  });
 
   const generateLesson = async () => {
     if (!selectedCategory) return;
     
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-lessons', {
-        body: { category: selectedCategory, level: selectedLevel }
+      submit({
+        category: selectedCategory,
+        level: selectedLevel,
       });
 
       if (error) throw error;
-      setLesson(data);
+      setLesson(object?.article);
       setQuizAnswer(null);
       setShowResult(false);
     } catch (error) {
@@ -54,45 +64,70 @@ const Learning:React.FC = () => {
   };
 
   const submitQuiz = async () => {
-    if (quizAnswer === null) return;
+    if (quizAnswer === null || !lesson || !selectedCategory) return;
     
     const isCorrect = quizAnswer === lesson.quiz.correctAnswer;
-    setShowResult(true);
+    setSubmittingQuiz(true);
 
-    if (isCorrect) {
-      toast.success('Correct! Well done! 🎉');
-      
-      // Save progress
-      try {
-        await supabase.from('learning_progress').insert({
-          user_id: user?.id,
-          lesson_id: `${selectedCategory}-${selectedLevel}`,
-          lesson_title: lesson.title,
-          category: selectedCategory,
-          completed: true,
-          score: 100,
-          completed_at: new Date().toISOString()
-        });
+    try {
+      // Prepare progress data
+      const progressData: SaveProgressRequest = {
+        lessonId: `${selectedCategory}-${selectedLevel}`,
+        lessonTitle: lesson.title,
+        category: selectedCategory,
+        completed: isCorrect,
+        score: isCorrect ? 100 : 0,
+        isCorrect: isCorrect,
+      };
 
-        // Update streak
-        const { data: currentStreak } = await supabase
-          .from('user_streaks')
-          .select('total_lessons_completed')
-          .eq('user_id', user?.id)
-          .single();
+      // Call API to save progress and update streak
+      const response = await fetch('/api/learning/progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(progressData),
+      });
 
-        await supabase
-          .from('user_streaks')
-          .update({
-            total_lessons_completed: (currentStreak?.total_lessons_completed || 0) + 1,
-            last_activity_date: new Date().toISOString().split('T')[0]
-          })
-          .eq('user_id', user?.id);
-      } catch (error) {
-        console.error('Error saving progress:', error);
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        throw new Error(errorData.error || 'Failed to save progress');
       }
-    } else {
-      toast.error('Not quite. Try again!');
+
+      const result: SaveProgressResponse = await response.json();
+      setShowResult(true);
+
+      // Show success/error toast
+      if (isCorrect) {
+        toast.success('Correct! Well done! 🎉', {
+          description: `Score: ${result.progress.score}/100`,
+        });
+        
+        // Show streak information
+        if (result.streak) {
+          toast.success(
+            `🔥 Streak: ${result.streak.current_streak} days | Total: ${result.streak.total_lessons_completed} lessons`,
+            { duration: 5000 }
+          );
+        }
+      } else {
+        toast.error('Not quite. Try again!', {
+          description: 'Keep practicing to improve your score',
+        });
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save progress');
+      setShowResult(true); // Still show result even if save fails
+      
+      if (isCorrect) {
+        toast.success('Correct! Well done! 🎉');
+      } else {
+        toast.error('Not quite. Try again!');
+      }
+    } finally {
+      setSubmittingQuiz(false);
     }
   };
 
@@ -157,7 +192,7 @@ const Learning:React.FC = () => {
                 variant="default"
                 className="w-full"
               >
-                {loading ? (
+                {loading || isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Generating Your Lesson...
@@ -172,7 +207,9 @@ const Learning:React.FC = () => {
             )}
           </>
         ) : (
-          <div className="space-y-6 animate-fade-in">
+          <>
+          {lesson &&(
+            <div className="space-y-6 animate-fade-in">
             {/* Lesson Content */}
             <Card className="glass-card p-8">
               <h2 className="text-2xl font-bold mb-4 gradient-text">{lesson.title}</h2>
@@ -211,8 +248,8 @@ const Learning:React.FC = () => {
                     key={i}
                     variant={quizAnswer === i ? 'default' : 'outline'}
                     className="w-full justify-start text-left h-auto py-3"
-                    onClick={() => !showResult && setQuizAnswer(i)}
-                    disabled={showResult}
+                    onClick={() => !showResult && !submittingQuiz && setQuizAnswer(i)}
+                    disabled={showResult || submittingQuiz}
                   >
                     {String.fromCharCode(65 + i)}. {option}
                     {showResult && i === lesson.quiz.correctAnswer && (
@@ -225,11 +262,18 @@ const Learning:React.FC = () => {
               {!showResult ? (
                 <Button
                   onClick={submitQuiz}
-                  disabled={quizAnswer === null}
+                  disabled={quizAnswer === null || submittingQuiz}
                   variant="default"
                   className="w-full"
                 >
-                  Submit Answer
+                  {submittingQuiz ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Saving Progress...
+                    </>
+                  ) : (
+                    'Submit Answer'
+                  )}
                 </Button>
               ) : (
                 <Button
@@ -242,6 +286,9 @@ const Learning:React.FC = () => {
               )}
             </Card>
           </div>
+          )}
+          </>
+          
         )}
       </main>
     </div>

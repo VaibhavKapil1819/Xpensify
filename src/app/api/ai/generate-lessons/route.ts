@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { streamText, UIMessage, convertToModelMessages, streamObject } from "ai";
+import { streamObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { articleSchema } from "./schema";
 
-export async function GET(req: NextRequest, res: NextResponse) {
+export async function POST(req: NextRequest, res: NextResponse) {
     //const { messages }: { messages: UIMessage[] } = await req.json();
-    //const { prompt }: { prompt: string } = await req.json();
-
-    const category = req.nextUrl.searchParams.get("category");
-    const level = req.nextUrl.searchParams.get("level");
+    const { category, level }: { category: string, level: string } = await req.json();
     try {
         const result = streamObject({
             model: google("gemini-2.5-flash"),

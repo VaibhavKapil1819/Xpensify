@@ -30,14 +30,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <div className="relative min-h-screen bg-background text-foreground">
+        
+        {/* <div className="relative min-h-screen bg-background text-foreground">
           <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsla(173,80%,40%,0.10),transparent_60%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,hsla(221,69%,33%,0.10),transparent_60%)]" />
             <div className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]">
               <div className="h-full w-full bg-[linear-gradient(to_right,transparent,hsla(0,0%,100%,0.06)_1px,transparent_1px),linear-gradient(to_bottom,transparent,hsla(0,0%,100%,0.06)_1px,transparent_1px)] bg-[size:14px_14px]" />
             </div>
-          </div>
+          </div> */}
           <ReactQueryProvider>
             <TooltipProvider>
               <AuthProvider>
@@ -46,7 +47,7 @@ export default function RootLayout({
               </AuthProvider>
             </TooltipProvider>
           </ReactQueryProvider>
-        </div>
+        {/* </div> */}
       </body>
     </html>
   );

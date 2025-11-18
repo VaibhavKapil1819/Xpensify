@@ -4,9 +4,7 @@ import { streamText, UIMessage, convertToModelMessages, streamObject } from "ai"
 import { google } from "@ai-sdk/google";
 import { financialNewsSchema } from "./schema";
 
-export async function GET(req: NextRequest, res: NextResponse) {
-    //const { messages }: { messages: UIMessage[] } = await req.json();
-    //const { prompt }: { prompt: string } = await req.json();
+export async function POST(req: NextRequest, res: NextResponse) {
 
     const userPrompt = `Generate 3 diverse financial news articles for today. Each article should have:
     - title: A compelling, specific headline (max 60 chars)

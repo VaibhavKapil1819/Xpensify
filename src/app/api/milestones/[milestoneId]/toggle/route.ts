@@ -1,4 +1,4 @@
-// app/api/milestones/[milestoneId]/route.ts
+// app/api/milestones/[milestoneId]/toggle/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
@@ -9,7 +9,7 @@ interface RouteContext {
   }>;
 }
 
-// PATCH /api/milestones/[milestoneId] - Toggle milestone completion
+// PATCH /api/milestones/[milestoneId]/toggle - Toggle milestone completion status
 export async function PATCH(
   request: NextRequest,
   context: RouteContext
@@ -26,6 +26,15 @@ export async function PATCH(
 
     const { milestoneId } = await context.params;
 
+    // Validate milestone ID format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(milestoneId)) {
+      return NextResponse.json(
+        { error: 'Invalid milestone ID format' },
+        { status: 400 }
+      );
+    }
+
     // Get the milestone and verify it belongs to the user
     const milestone = await prisma.milestone.findUnique({
       where: { id: milestoneId },
@@ -33,6 +42,7 @@ export async function PATCH(
         goal: {
           select: {
             user_id: true,
+            title: true,
           },
         },
       },
@@ -47,35 +57,48 @@ export async function PATCH(
 
     if (milestone.goal.user_id !== currentUser.userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Forbidden: You do not have access to this milestone' },
         { status: 403 }
       );
     }
 
     // Toggle the completion status
+    const newCompletionStatus = !milestone.completed;
     const updatedMilestone = await prisma.milestone.update({
       where: { id: milestoneId },
       data: {
-        completed: !milestone.completed,
-        completed_at: !milestone.completed ? new Date() : null,
+        completed: newCompletionStatus,
+        completed_at: newCompletionStatus ? new Date() : null,
+      },
+      include: {
+        goal: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
     });
 
     return NextResponse.json({
       success: true,
       milestone: updatedMilestone,
-      message: milestone.completed ? 'Milestone reopened' : 'Milestone completed! 🎉',
+      message: newCompletionStatus 
+        ? 'Milestone completed! 🎉' 
+        : 'Milestone reopened',
     });
 
   } catch (error) {
     console.error('Error toggling milestone:', error);
     return NextResponse.json(
-      { error: 'Failed to update milestone' },
+      { 
+        error: 'Failed to update milestone',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
 }
-
 
 
 

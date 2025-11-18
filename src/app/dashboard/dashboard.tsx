@@ -17,6 +17,17 @@ import DashboardNav from '@/components/DashboardNav';
 import { DashboardSkeleton } from '@/components/DashboardSkeletons';
 import FinancialNews from '@/components/FinancialNews';
 import type { DashboardProfile, DashboardGoal, DashboardStreak } from '@/types/dashboard';
+import { experimental_useObject as useObject } from "@ai-sdk/react";
+import { insightsSchema } from '../api/ai/dashboard-insights/schema';
+import { useTheme } from 'next-themes';
+
+
+interface InsightsType {
+  todaysFocus: string;
+  motivationalMessage: string;
+  financialWellnessScore: number;
+  nextMilestone: string;
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -24,8 +35,13 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [goals, setGoals] = useState<DashboardGoal[]>([]);
   const [streak, setStreak] = useState<DashboardStreak | null>(null);
-  const [insights, setInsights] = useState<any>(null);
+  const [insights, setInsights] = useState<InsightsType | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const { submit, object, isLoading, error, stop } = useObject({
+    api: "/api/ai/dashboard-insights",
+    schema: insightsSchema,
+  });
 
   useEffect(() => {
     if (user) {
@@ -51,14 +67,11 @@ export default function Dashboard() {
       setProfile(data.profile);
       setGoals(data.goals || []);
       setStreak(data.streak);
-
-      // TODO: Generate AI insights in future
-      // You can create another API endpoint for AI insights
-      // const insightsResponse = await fetch('/api/dashboard/insights', {
-      //   method: 'POST',
-      //   credentials: 'include',
-      //   body: JSON.stringify({ profile: data.profile, goals: data.goals, streak: data.streak })
-      // });
+      submit({
+        profile: data.profile,
+        goals: data.goals,
+        streak: data.streak,
+      });
 
     } catch (error: any) {
       console.error('Error loading dashboard:', error);
@@ -73,14 +86,22 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) {
+  useEffect(() => {
+    if (object) {
+      setInsights(object as InsightsType);
+    }
+  }, [object]);
+
+  if (loading || !insights) {
     return <DashboardSkeleton />;
   }
 
   const wellnessScore = insights?.financialWellnessScore || 50;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10">
+    <>
+    {insights && (
+      <div className="min-h-screen bg-linear-to-br from-background via-primary/5 to-accent/10">
       <DashboardNav />
 
       <main className="container mx-auto px-4 py-8">
@@ -232,5 +253,8 @@ export default function Dashboard() {
         </div>
       </main>
     </div>
+    )}
+    </>
+    
   );
 }

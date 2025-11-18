@@ -56,3 +56,5 @@ export type ExpenseCategory = typeof EXPENSE_CATEGORIES[number];
 export type IncomeCategory = typeof INCOME_CATEGORIES[number];
 
 
+
+

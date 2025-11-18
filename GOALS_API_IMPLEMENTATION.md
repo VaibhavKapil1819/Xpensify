@@ -336,3 +336,5 @@ model Milestone {
 The Goals page now works entirely through secure API routes with proper authentication, validation, and error handling.
 
 
+
+
