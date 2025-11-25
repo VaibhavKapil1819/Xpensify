@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,29 +9,65 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Target, 
-  Plus, 
+import {
+  Target,
+  Plus,
   Sparkles,
   TrendingUp,
   Calendar,
   DollarSign,
   CheckCircle2,
-  Clock
+  Clock,
+  PiggyBank,
+  TrendingUpIcon,
+  CreditCard,
+  Shield,
+  GraduationCap,
+  Home,
+  Wallet
 } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardNav from '@/components/DashboardNav';
 import { useRouter } from 'next/navigation';
-import type { Goal, Milestone } from '@/types/goals';
+import { DashboardSkeleton } from '@/components/DashboardSkeletons';
+
+interface Goal {
+  id: string;
+  title: string;
+  description: string | null;
+  target_amount: number;
+  current_amount: number;
+  target_date: string | null;
+  category: string;
+  status: string;
+  ai_completion_probability: number | null;
+  created_at: string;
+  user_id: string;
+}
+
+interface Milestone {
+  id: string;
+  goal_id: string;
+  title: string;
+  description: string | null;
+  target_amount: number;
+  due_date: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+}
 
 interface Profile {
   id: string;
   email: string;
   full_name: string | null;
   currency: string;
+  risk_level?: string;
+  primary_goal?: string;
+  learning_preference?: string;
 }
 
-const Goals: React.FC = () => {
+export default function Goals() {
   const { user } = useAuth();
   const navigate = useRouter();
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -41,6 +77,7 @@ const Goals: React.FC = () => {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creatingGoal, setCreatingGoal] = useState(false);
+  const [generatingMilestones, setGeneratingMilestones] = useState(false);
   const [loadingMilestones, setLoadingMilestones] = useState(false);
 
   const [newGoal, setNewGoal] = useState({
@@ -58,6 +95,26 @@ const Goals: React.FC = () => {
       loadGoalsData();
     }
   }, [user]);
+
+  // Get category icon and color
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'savings':
+        return { icon: Target, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50' };
+      case 'investment':
+        return { icon: TrendingUpIcon, color: 'from-green-500 to-green-600', bgColor: 'bg-green-50' };
+      case 'debt':
+        return { icon: CreditCard, color: 'from-red-500 to-red-600', bgColor: 'bg-red-50' };
+      case 'emergency':
+        return { icon: Shield, color: 'from-orange-500 to-orange-600', bgColor: 'bg-orange-50' };
+      case 'education':
+        return { icon: GraduationCap, color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-50' };
+      case 'retirement':
+        return { icon: Home, color: 'from-indigo-500 to-indigo-600', bgColor: 'bg-indigo-50' };
+      default:
+        return { icon: Wallet, color: 'from-gray-500 to-gray-600', bgColor: 'bg-gray-50' };
+    }
+  };
 
   const loadGoalsData = async () => {
     try {
@@ -78,7 +135,7 @@ const Goals: React.FC = () => {
     } catch (error: any) {
       console.error('Error loading goals:', error);
       toast.error(error.message || 'Failed to load goals');
-      
+
       if (error.message === 'Unauthorized') {
         navigate.push('/auth');
       }
@@ -89,7 +146,9 @@ const Goals: React.FC = () => {
 
   const loadMilestones = async (goalId: string) => {
     try {
+      console.log('Loading milestones for goal ID:', goalId);
       setLoadingMilestones(true);
+
       const response = await fetch(`/api/goals/${goalId}/milestones`, {
         method: 'GET',
         credentials: 'include',
@@ -97,11 +156,15 @@ const Goals: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Failed to load milestones:', errorData);
         throw new Error(errorData.error || 'Failed to load milestones');
       }
 
       const data = await response.json();
+      console.log('Loaded milestones:', data);
+
       setMilestones(data.milestones || []);
+      console.log('Milestones set in state:', data.milestones?.length || 0);
     } catch (error: any) {
       console.error('Error loading milestones:', error);
       toast.error(error.message || 'Failed to load milestones');
@@ -119,6 +182,7 @@ const Goals: React.FC = () => {
     setCreatingGoal(true);
 
     try {
+      // Step 1: Create the goal
       const response = await fetch('/api/goals', {
         method: 'POST',
         headers: {
@@ -142,10 +206,102 @@ const Goals: React.FC = () => {
         throw new Error(data.error || 'Failed to create goal');
       }
 
-      toast.success('Goal created with milestones! 🎉');
+      const createdGoal = data.goal;
+      toast.success('Target set! Creating your achievement roadmap...');
       setShowCreateDialog(false);
+      setGeneratingMilestones(true);
 
-      // Reload goals
+      // Step 2: Generate milestones with AI
+      try {
+        console.log('Generating AI milestones for goal:', createdGoal.id);
+
+        const aiResponse = await fetch('/api/ai/generate-milestones', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            goal: {
+              ...createdGoal,
+              currency: newGoal.currency,
+            },
+            profile: profile || {},
+          }),
+        });
+
+        if (!aiResponse.ok) {
+          const errorText = await aiResponse.text();
+          console.error('AI generation failed:', errorText);
+          throw new Error('Failed to generate AI milestones');
+        }
+
+        const aiData = await aiResponse.json();
+        console.log('AI Response:', aiData);
+
+        if (!aiData.milestones || !Array.isArray(aiData.milestones)) {
+          console.error('Invalid AI response format:', aiData);
+          throw new Error('Invalid AI response format');
+        }
+
+        // Step 3: Save milestones to database
+        const milestonesToInsert = aiData.milestones.map((m: any) => ({
+          goal_id: createdGoal.id,
+          title: m.title,
+          description: `${m.description}\n\nAdvice: ${m.advice}`,
+          target_amount: m.target_amount,
+          due_date: m.due_date,
+        }));
+
+        console.log('Saving milestones:', milestonesToInsert);
+
+        const saveMilestonesResponse = await fetch('/api/milestones', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ milestones: milestonesToInsert }),
+        });
+
+        if (!saveMilestonesResponse.ok) {
+          const errorData = await saveMilestonesResponse.json();
+          console.error('Failed to save milestones:', errorData);
+          throw new Error(errorData.error || 'Failed to save milestones');
+        }
+
+        const savedMilestonesData = await saveMilestonesResponse.json();
+        console.log('Milestones saved:', savedMilestonesData);
+
+        // Step 4: Update goal with AI completion probability
+        console.log('Updating goal with probability:', aiData.completion_probability);
+
+        const patchResponse = await fetch(`/api/goals/${createdGoal.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            ai_completion_probability: aiData.completion_probability,
+          }),
+        });
+
+        if (!patchResponse.ok) {
+          const patchError = await patchResponse.json();
+          console.error('Failed to update goal probability:', patchError);
+        } else {
+          const patchData = await patchResponse.json();
+          console.log('Goal updated:', patchData);
+        }
+
+        toast.success('Your achievement roadmap is ready! 🎉');
+      } catch (aiError: any) {
+        console.error('AI generation error:', aiError);
+        toast.error(aiError.message || 'Created goal but failed to generate AI milestones');
+      }
+
+      // Reload goals to get updated data
       await loadGoalsData();
 
       // Reset form
@@ -159,15 +315,21 @@ const Goals: React.FC = () => {
         currency: 'USD'
       });
 
-      // Auto-select the new goal
-      setSelectedGoal(data.goal);
-      await loadMilestones(data.goal.id);
+      // Auto-select the new goal and load its milestones
+      // Use the createdGoal which has the goal ID
+      const goalToSelect = createdGoal;
+      setSelectedGoal(goalToSelect);
+
+      // Load milestones for the newly created goal
+      console.log('Loading milestones for goal:', goalToSelect.id);
+      await loadMilestones(goalToSelect.id);
 
     } catch (error: any) {
       console.error('Error creating goal:', error);
       toast.error(error.message || 'Failed to create goal');
     } finally {
       setCreatingGoal(false);
+      setGeneratingMilestones(false);
     }
   };
 
@@ -178,14 +340,18 @@ const Goals: React.FC = () => {
 
   const toggleMilestone = async (milestone: Milestone) => {
     try {
-      const response = await fetch(`/api/milestones/${milestone.id}`, {
-        method: 'PATCH',
+      console.log('Toggling milestone:', milestone.id);
+
+      const response = await fetch(`/api/milestones/${milestone.id}/toggle`, {
+        method: 'PATCH',  // Changed from POST to PATCH
         credentials: 'include',
       });
 
       const data = await response.json();
+      console.log('Toggle response:', data);
 
       if (!response.ok) {
+        console.error('Toggle failed:', data);
         throw new Error(data.error || 'Failed to update milestone');
       }
 
@@ -193,6 +359,7 @@ const Goals: React.FC = () => {
 
       // Reload milestones
       if (selectedGoal) {
+        console.log('Reloading milestones after toggle');
         await loadMilestones(selectedGoal.id);
       }
     } catch (error: any) {
@@ -202,105 +369,55 @@ const Goals: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center mac-bg">
-        <div className="w-16 h-16 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
-      </div>
-    );
+    return <DashboardSkeleton />
   }
 
   return (
     <div className="min-h-screen mac-bg">
       <DashboardNav />
       <main className="container mx-auto px-4 py-8 pt-24">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 animate-fade-in">
           <div>
-            <h1 className="text-3xl font-bold mac-text-primary mb-2">My Goals</h1>
-            <p className="mac-text-secondary">Track your financial milestones and achievements</p>
+            <h1 className="text-3xl font-bold mac-text-primary mb-2">Financial Goals</h1>
+            <p className="mac-text-secondary">Set targets, track progress, and achieve your financial dreams</p>
           </div>
-          
+
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button variant="default" size="lg">
                 <Plus className="w-5 h-5 mr-2" />
-                Create Goal
+                Set New Target
               </Button>
             </DialogTrigger>
             <DialogContent className="mac-card max-w-2xl">
               <DialogHeader>
-                <DialogTitle className="text-2xl mac-text-primary">Create New Goal</DialogTitle>
+                <DialogTitle className="text-2xl mac-text-primary">Set Your Financial Target</DialogTitle>
               </DialogHeader>
-              
-              <div className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Goal Title *</Label>
+
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="title">What do you want to achieve? *</Label>
                   <Input
                     id="title"
-                    placeholder="e.g., Emergency Fund"
+                    placeholder="e.g., Build $10,000 Emergency Fund"
                     value={newGoal.title}
                     onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-                    className="glass-input"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                <div className="grid gap-2">
+                  <Label htmlFor="description">Why is this important to you?</Label>
                   <Textarea
                     id="description"
-                    placeholder="What is this goal for?"
+                    placeholder="e.g., To have financial security for unexpected expenses"
                     value={newGoal.description}
                     onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
-                    className="glass-input"
+                    rows={3}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Select value={newGoal.category} onValueChange={(value) => setNewGoal({ ...newGoal, category: value })}>
-                      <SelectTrigger className="glass-input">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="savings">Savings</SelectItem>
-                        <SelectItem value="investment">Investment</SelectItem>
-                        <SelectItem value="debt">Debt Payment</SelectItem>
-                        <SelectItem value="purchase">Big Purchase</SelectItem>
-                        <SelectItem value="emergency">Emergency Fund</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="currency">Currency</Label>
-                    <Select value={newGoal.currency} onValueChange={(value) => setNewGoal({ ...newGoal, currency: value })}>
-                      <SelectTrigger className="glass-input">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                        <SelectItem value="INR">INR (₹)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="GBP">GBP (£)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="current_amount">Current Amount</Label>
-                    <Input
-                      id="current_amount"
-                      type="number"
-                      placeholder="0"
-                      value={newGoal.current_amount}
-                      onChange={(e) => setNewGoal({ ...newGoal, current_amount: e.target.value })}
-                      className="glass-input"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
+                  <div className="grid gap-2">
                     <Label htmlFor="target_amount">Target Amount *</Label>
                     <Input
                       id="target_amount"
@@ -308,96 +425,154 @@ const Goals: React.FC = () => {
                       placeholder="10000"
                       value={newGoal.target_amount}
                       onChange={(e) => setNewGoal({ ...newGoal, target_amount: e.target.value })}
-                      className="glass-input"
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="current_amount">Current Amount</Label>
+                    <Input
+                      id="current_amount"
+                      type="number"
+                      placeholder="0"
+                      value={newGoal.current_amount}
+                      onChange={(e) => setNewGoal({ ...newGoal, current_amount: e.target.value })}
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="target_date">Target Date</Label>
-                  <Input
-                    id="target_date"
-                    type="date"
-                    value={newGoal.target_date}
-                    onChange={(e) => setNewGoal({ ...newGoal, target_date: e.target.value })}
-                    className="glass-input"
-                  />
-                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select
+                      value={newGoal.category}
+                      onValueChange={(value) => setNewGoal({ ...newGoal, category: value })}
+                    >
+                      <SelectTrigger id="category">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="savings">Savings</SelectItem>
+                        <SelectItem value="investment">Investment</SelectItem>
+                        <SelectItem value="debt">Debt Repayment</SelectItem>
+                        <SelectItem value="emergency">Emergency Fund</SelectItem>
+                        <SelectItem value="education">Education</SelectItem>
+                        <SelectItem value="retirement">Retirement</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <Button 
-                  onClick={handleCreateGoal} 
-                  variant="default" 
-                  className="w-full"
-                  disabled={creatingGoal}
-                >
-                  {creatingGoal ? (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                      Creating goal...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Create Goal with Milestones
-                    </>
-                  )}
-                </Button>
+                  <div className="grid gap-2">
+                    <Label htmlFor="target_date">Target Date</Label>
+                    <Input
+                      id="target_date"
+                      type="date"
+                      value={newGoal.target_date}
+                      onChange={(e) => setNewGoal({ ...newGoal, target_date: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
+
+              <Button
+                onClick={handleCreateGoal}
+                variant="default"
+                className="w-full"
+                disabled={creatingGoal}
+              >
+                {creatingGoal ? (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                    Setting up your target...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Set Target & Generate Roadmap
+                  </>
+                )}
+              </Button>
             </DialogContent>
           </Dialog>
         </div>
 
+        {generatingMilestones && (
+          <Card className="mac-card p-6 mb-6 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-6 h-6 text-blue-600 animate-spin" />
+              <div>
+                <h3 className="font-semibold mac-text-primary">Creating your achievement roadmap...</h3>
+                <p className="text-sm mac-text-secondary">AI is breaking down your target into actionable steps to help you succeed</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {goals.length === 0 ? (
-          <Card className="mac-card p-12 text-center animate-fade-in">
-            <Target className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2 mac-text-primary">No Goals Yet</h2>
-            <p className="mac-text-secondary mb-6">
-              Start your financial journey by creating your first goal
-            </p>
-            <Button variant="default" size="lg" onClick={() => setShowCreateDialog(true)}>
-              <Plus className="w-5 h-5 mr-2" />
-              Create Your First Goal
-            </Button>
+          <Card className="mac-card p-16 text-center animate-fade-in">
+            <div className="max-w-lg mx-auto">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <Target className="w-12 h-12 text-blue-600" />
+              </div>
+              <h2 className="text-3xl font-bold mb-3 mac-text-primary">Start Achieving Your Goals</h2>
+              <p className="mac-text-secondary mb-8 text-base leading-relaxed">
+                Set your financial targets and let our AI create a personalized roadmap to help you achieve them step by step.
+              </p>
+              <Button variant="default" size="lg" onClick={() => setShowCreateDialog(true)}>
+                <Plus className="w-5 h-5 mr-2" />
+                Set Your First Target
+              </Button>
+            </div>
           </Card>
         ) : (
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid lg:grid-cols-3 gap-6 animate-fade-in">
             {/* Goals List */}
             <div className="lg:col-span-1 space-y-4">
               {goals.map((goal) => {
                 const targetAmount = Number(goal.target_amount || 0);
                 const currentAmount = Number(goal.current_amount);
-                const progress = targetAmount > 0 
-                  ? (currentAmount / targetAmount) * 100 
+                const progress = targetAmount > 0
+                  ? (currentAmount / targetAmount) * 100
                   : 0;
-                
+
+                const { icon: CategoryIcon, color, bgColor } = getCategoryIcon(goal.category);
+
                 return (
-                  <Card 
+                  <Card
                     key={goal.id}
-                    className={`mac-card p-4 cursor-pointer transition-all ${
-                      selectedGoal?.id === goal.id ? 'border-blue-500' : ''
-                    }`}
+                    className={`mac-card p-4 cursor-pointer transition-all hover:shadow-lg ${selectedGoal?.id === goal.id ? 'ring-2 ring-blue-500' : ''
+                      }`}
                     onClick={() => handleSelectGoal(goal)}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h3 className="font-semibold mac-text-primary">{goal.title}</h3>
-                        <p className="text-sm mac-text-secondary capitalize">{goal.category}</p>
-                      </div>
-                      {goal.ai_completion_probability && (
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-blue-600">
-                            {goal.ai_completion_probability}%
-                          </div>
-                          <div className="text-xs mac-text-tertiary">likely</div>
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className={`w-12 h-12 rounded-xl ${bgColor} flex items-center justify-center shrink-0 shadow-sm`}>
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center`}>
+                          <CategoryIcon className="w-5 h-5 text-white" />
                         </div>
-                      )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-1">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold mac-text-primary truncate">{goal.title}</h3>
+                            <p className="text-xs mac-text-secondary capitalize">{goal.category}</p>
+                          </div>
+                          {goal.ai_completion_probability && (
+                            <div className="ml-2 shrink-0">
+                              <div className="text-xs font-semibold text-blue-600">
+                                {goal.ai_completion_probability}%
+                              </div>
+                              <div className="text-[10px] mac-text-tertiary text-right">likely</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <Progress value={progress} className="h-2 mb-2" />
                     <div className="flex items-center justify-between text-sm">
-                      <span className="mac-text-secondary">
+                      <span className="mac-text-secondary text-xs">
                         {profile?.currency || 'USD'} {currentAmount.toLocaleString()}
                       </span>
-                      <span className="font-medium mac-text-primary">
+                      <span className="font-semibold mac-text-primary text-xs">
                         {profile?.currency || 'USD'} {targetAmount.toLocaleString()}
                       </span>
                     </div>
@@ -406,7 +581,7 @@ const Goals: React.FC = () => {
               })}
             </div>
 
-            {/* Goal Details & Milestones */}
+            {/* Goal Details */}
             <div className="lg:col-span-2">
               {selectedGoal ? (
                 <div className="space-y-6 animate-fade-in">
@@ -458,8 +633,8 @@ const Goals: React.FC = () => {
                       )}
                     </div>
 
-                    <Progress 
-                      value={(Number(selectedGoal.current_amount) / Number(selectedGoal.target_amount || 1)) * 100} 
+                    <Progress
+                      value={(Number(selectedGoal.current_amount) / Number(selectedGoal.target_amount || 1)) * 100}
                       className="h-3"
                     />
                   </Card>
@@ -467,9 +642,9 @@ const Goals: React.FC = () => {
                   <div>
                     <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 mac-text-primary">
                       <Sparkles className="w-5 h-5 text-blue-600" />
-                      Milestones
+                      Steps to Achieve Your Target
                     </h3>
-                    
+
                     {loadingMilestones ? (
                       <Card className="mac-card p-8 text-center">
                         <div className="w-12 h-12 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin mx-auto" />
@@ -482,24 +657,22 @@ const Goals: React.FC = () => {
                     ) : (
                       <div className="space-y-3">
                         {milestones.map((milestone, index) => (
-                          <Card 
+                          <Card
                             key={milestone.id}
-                            className={`mac-card p-4 transition-all ${
-                              milestone.completed ? 'opacity-60' : ''
-                            }`}
+                            className={`mac-card p-4 transition-all ${milestone.completed ? 'opacity-60' : ''
+                              }`}
                           >
-                            <div className="flex items-start gap-4">
+                            <div className="flex items-start gap-3">
                               <button
                                 onClick={() => toggleMilestone(milestone)}
-                                className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                                  milestone.completed
-                                    ? 'bg-blue-600 border-blue-600'
-                                    : 'border-gray-300 hover:border-blue-600'
-                                }`}
+                                className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${milestone.completed
+                                  ? 'bg-blue-600 border-blue-600'
+                                  : 'border-gray-300 hover:border-blue-600'
+                                  }`}
                               >
                                 {milestone.completed && <CheckCircle2 className="w-4 h-4 text-white" />}
                               </button>
-                              
+
                               <div className="flex-1">
                                 <div className="flex items-start justify-between mb-1">
                                   <h4 className={`font-semibold mac-text-primary ${milestone.completed ? 'line-through' : ''}`}>
@@ -529,11 +702,16 @@ const Goals: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <Card className="mac-card p-12 text-center h-full flex items-center justify-center">
-                  <div>
-                    <Target className="w-16 h-16 mac-text-tertiary mx-auto mb-4" />
-                    <p className="mac-text-secondary">
-                      Select a goal to view details and milestones
+                <Card className="mac-card p-12 text-center h-[60vh] flex items-center justify-center animate-fade-in">
+                  <div className="max-w-md">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center mx-auto mb-6">
+                      <Target className="w-10 h-10 text-blue-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold mac-text-primary mb-2">
+                      Choose Your Target
+                    </h3>
+                    <p className="mac-text-secondary text-sm leading-relaxed">
+                      Select a goal to view your progress, complete milestones, and stay on track to achieve your target
                     </p>
                   </div>
                 </Card>
@@ -546,4 +724,3 @@ const Goals: React.FC = () => {
   );
 }
 
-export default Goals

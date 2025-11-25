@@ -9,13 +9,16 @@ import {
   Trophy,
   Target,
   CheckCircle2,
-  Loader2
+  Loader2,
+  CopyIcon,
+  RefreshCcwIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardNav from '@/components/DashboardNav';
 import { articleSchema } from '../api/ai/generate-lessons/schema';
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import type { SaveProgressRequest, SaveProgressResponse, ApiError } from '@/types/learning';
+import { Message, MessageContent, MessageResponse, MessageActions, MessageAction } from '@/components/ai-elements/message';
 
 const categories = [
   { id: 'budgeting', name: 'Budgeting Basics', icon: '💰', color: 'bg-blue-500/10 text-blue-600' },
@@ -228,13 +231,14 @@ const Learning: React.FC = () => {
                 {/* Lesson Content */}
                 <Card className="mac-card p-8">
                   <h2 className="text-2xl font-bold mb-4 mac-text-primary">{lesson?.title || 'Lesson'}</h2>
-                  <div className="prose prose-lg max-w-none mac-text-primary">
-                    {lesson?.content ? lesson.content.split('\n\n').map((para: string, i: number) => (
-                      <p key={i} className="mb-4">{para}</p>
-                    )) : (
-                      <p className="mb-4">Loading content...</p>
-                    )}
-                  </div>
+
+                  <Message from="assistant">
+                    <MessageContent>
+                      <MessageResponse className='font-semibold mb-4 mac-text-primary'>
+                        {lesson?.content || 'Loading content...'}
+                      </MessageResponse>
+                    </MessageContent>
+                  </Message>
 
                   {lesson?.keyTakeaways && Array.isArray(lesson.keyTakeaways) && lesson.keyTakeaways.length > 0 && (
                     <div className="mt-6 p-4 bg-blue-50 rounded-lg">
@@ -245,7 +249,7 @@ const Learning: React.FC = () => {
                       <ul className="space-y-2">
                         {lesson.keyTakeaways.map((point: string, i: number) => (
                           <li key={i} className="flex items-start gap-2">
-                            <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
                             <span className="mac-text-primary">{point}</span>
                           </li>
                         ))}
