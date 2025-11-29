@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import DashboardNav from "@/components/DashboardNav";
-
+// A skeleton loader for the dashboard page
 export function DashboardSkeleton() {
   return (
     <div className="min-h-screen mac-bg">
