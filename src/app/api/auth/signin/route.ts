@@ -9,6 +9,13 @@ const signInSchema = z.object({
     password: z.string().min(1, 'Password is required'),
 });
 
+// Helper to check if error is a database connection error
+function isDatabaseConnectionError(error: any): boolean {
+    return error?.code === 'P1001' || 
+           error?.message?.includes('Can\'t reach database server') ||
+           error?.message?.includes('connection');
+}
+
 export async function POST(request: NextRequest) {
     try {
         // Parse and validate request body
@@ -18,9 +25,24 @@ export async function POST(request: NextRequest) {
         const { email, password } = validatedData;
 
         // Find user by email (including password_hash for verification)
-        const user = await prisma.profile.findUnique({
+        let user;
+        try {
+            user = await prisma.profile.findUnique({
             where: { email },
         });
+        } catch (dbError: any) {
+            if (isDatabaseConnectionError(dbError)) {
+                console.error('Database connection error during signin:', dbError);
+                return NextResponse.json(
+                    { 
+                        error: 'Database temporarily unavailable',
+                        message: 'Unable to sign in. Please check your database connection and try again later.',
+                    },
+                    { status: 503 } // Service Unavailable
+                );
+            }
+            throw dbError; // Re-throw if it's not a connection error
+        }
 
         if (!user) {
             return NextResponse.json(
@@ -60,7 +82,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
-    } catch (error) {
+    } catch (error: any) {
         if (error instanceof z.ZodError) {
             const firstError = error.issues[0];
             return NextResponse.json(
@@ -69,9 +91,21 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Handle database connection errors
+        if (isDatabaseConnectionError(error)) {
+            console.error('Database connection error during signin:', error);
+            return NextResponse.json(
+                { 
+                    error: 'Database temporarily unavailable',
+                    message: 'Unable to sign in. Please check your database connection and try again later.',
+                },
+                { status: 503 }
+            );
+        }
+
         console.error('Signin error:', error);
         return NextResponse.json(
-            { error: 'An error occurred during signin' },
+            { error: 'An error occurred during signin', message: error.message || 'Unknown error' },
             { status: 500 }
         );
     }
