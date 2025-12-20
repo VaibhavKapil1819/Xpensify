@@ -20,14 +20,21 @@ import {
   Lightbulb,
   ArrowUpCircle,
   ArrowDownCircle,
+  Edit2,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardNav from '@/components/DashboardNav';
 import SmartUpload from '@/components/SmartUpload';
+import EditTransactionDialog from '@/components/EditTransactionDialog';
+import SpendingCharts from '@/components/SpendingCharts';
 import { useRouter } from 'next/navigation';
 import type { Transaction, TransactionType } from '@/types/transactions';
 import { Skeleton } from '@/components/ui/skeleton';
 import BudgetSkeletion from '@/components/budgetSkeletion';
+import { buttonClassName, progressClassName } from '@/models/constants';
 
 const expenseCategories = [
   'Food & Dining',
@@ -59,6 +66,8 @@ const Budget: React.FC = () => {
   const [addingTransaction, setAddingTransaction] = useState(false);
   const [analyzingSpending, setAnalyzingSpending] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [transactionType, setTransactionType] = useState<TransactionType>('expense');
   const [newTransaction, setNewTransaction] = useState({
     amount: '',
@@ -167,18 +176,25 @@ const Budget: React.FC = () => {
 
     setAnalyzingSpending(true);
     try {
-      // TODO: Create AI analysis API endpoint
-      // const response = await fetch('/api/transactions/analyze', {
-      //   method: 'POST',
-      //   credentials: 'include',
-      //   body: JSON.stringify({ transactions, budget }),
-      // });
-      // HIIII
+      const response = await fetch('/api/transactions/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ transactions }),
+      });
 
-      toast.info('AI analysis feature coming soon!');
-    } catch (error) {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to analyze spending');
+      }
+
+      setAnalysis(data.analysis);
+      toast.success('AI analysis complete!');
+    } catch (error: any) {
       console.error('Error analyzing spending:', error);
-      toast.error('Failed to analyze spending');
+      toast.error(error.message || 'Failed to analyze spending');
     } finally {
       setAnalyzingSpending(false);
     }
@@ -216,12 +232,45 @@ const Budget: React.FC = () => {
 
       const failures = data.filter((d, i) => !responses[i].ok);
       if (failures.length > 0) {
-        toast.error(`Failed to add ${failures.length} transaction(s)`);
+        // Show the specific failure message from the server to help identify invalid dates
+        const failureMessage = failures[0].error || 'Validation error';
+        toast.error(`Failed to add ${failures.length} transaction(s): ${failureMessage}`);
       }
     } catch (error) {
       console.error('Error saving extracted transactions:', error);
       toast.error('Failed to save transactions. Please try again.');
     }
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this transaction?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/transactions/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete transaction');
+      }
+
+      setTransactions(transactions.filter(t => t.id !== id));
+      toast.success('Transaction deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting transaction:', error);
+      toast.error(error.message || 'Failed to delete transaction');
+    }
+  };
+
+  const handleTransactionUpdated = (updatedTransaction: Transaction) => {
+    setTransactions(transactions.map(t =>
+      t.id === updatedTransaction.id ? updatedTransaction : t
+    ));
   };
 
   // Calculate totals and balances
@@ -327,7 +376,7 @@ const Budget: React.FC = () => {
               <h3 className="text-xl font-semibold">Transactions</h3>
             </div>
 
-            <Button className='bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all' variant="outline" size="sm" onClick={() => setShowForm(!showForm)}>
+            <Button className={buttonClassName} variant="outline" size="sm" onClick={() => setShowForm(!showForm)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Transaction
             </Button>
@@ -340,13 +389,13 @@ const Budget: React.FC = () => {
                 <div className="flex gap-3 mt-2">
                   <Button
                     type="button"
-                    className={`flex-1 ${transactionType === 'expense' ? 'bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all' : ''}`}
+                    className={`flex-1 ${transactionType === 'expense' ? buttonClassName : ''}`}
                     variant={transactionType === 'expense' ? 'default' : 'outline'}
                     onClick={() => {
                       setTransactionType('expense');
                       setNewTransaction({ ...newTransaction, type: 'expense', category: '' });
                     }}
-                    
+
                   >
                     <ArrowDownCircle className="w-4 h-4 mr-2" />
                     Expense
@@ -415,7 +464,7 @@ const Budget: React.FC = () => {
               </div>
               <div className="md:col-span-2 flex gap-3">
                 <Button
-                  className='bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all'
+                  className={buttonClassName}
                   onClick={addTransaction}
                   variant="default"
                   disabled={addingTransaction}
@@ -441,31 +490,108 @@ const Budget: React.FC = () => {
               <p>No transactions yet. Add one to get started!</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {transactions.slice(0, 10).map((t) => {
-                const isIncome = t.type === 'income';
-                return (
-                  <div key={t.id} className="flex items-center justify-between p-3 rounded-lg bg-accent/5">
-                    <div className="flex items-center gap-3">
-                      {isIncome ? (
-                        <ArrowUpCircle className="w-5 h-5 text-blue-500" />
-                      ) : (
-                        <ArrowDownCircle className="w-5 h-5 text-red-500" />
-                      )}
-                      <div>
-                        <p className="font-medium">{t.description || t.category}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {t.category} • {new Date(t.date).toLocaleDateString()}
+            <>
+              <div className="space-y-3">
+                {(showAllTransactions ? transactions : transactions.slice(0, 10)).map((t) => {
+                  const isIncome = t.type === 'income';
+                  return (
+                    <div
+                      key={t.id}
+                      className={`relative flex items-center justify-between p-4 rounded-xl border transition-all duration-300 group overflow-hidden ${isIncome
+                        ? 'bg-gradient-to-r from-green-50/50 to-emerald-50/30 dark:from-green-950/20 dark:to-emerald-950/10 border-green-200/50 dark:border-green-800/30 hover:shadow-lg hover:shadow-green-100/50 dark:hover:shadow-green-900/20'
+                        : 'bg-gradient-to-r from-red-50/50 to-rose-50/30 dark:from-red-950/20 dark:to-rose-950/10 border-r-200/50 dark:border-red-800/30 hover:shadow-lg hover:shadow-red-100/50 dark:hover:shadow-red-900/20'
+                        } hover:scale-[1.01] hover:border-opacity-100`}
+                    >
+
+
+                      <div className="flex items-center gap-4 flex-1 ml-2">
+                        {/* Icon with gradient background */}
+                        <div className={`p-2.5 rounded-xl ${isIncome
+                          ? 'bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-200/50 dark:shadow-green-900/30'
+                          : 'bg-gradient-to-br from-red-400 to-rose-500 shadow-lg shadow-red-200/50 dark:shadow-red-900/30'
+                          }`}>
+                          {isIncome ? (
+                            <ArrowUpCircle className="w-5 h-5 text-white" />
+                          ) : (
+                            <ArrowDownCircle className="w-5 h-5 text-white" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-foreground truncate">
+                            {t.description || t.category}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isIncome
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                              }`}>
+                              {t.category}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(t.date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {/* Amount with gradient text */}
+                        <p className={`text-lg font-bold bg-gradient-to-r ${isIncome
+                          ? 'from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400'
+                          : 'from-red-600 to-rose-600 dark:from-red-400 dark:to-rose-400'
+                          } bg-clip-text text-transparent`}>
+                          {isIncome ? '+' : '-'}₹{Number(t.amount).toLocaleString()}
                         </p>
+
+                        {/* Action buttons with better styling */}
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingTransaction(t)}
+                            className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteTransaction(t.id)}
+                            className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 rounded-lg transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                    <p className={`font-semibold ${isIncome ? 'text-blue-600' : 'text-red-600'}`}>
-                      {isIncome ? '+' : '-'}₹{Number(t.amount).toLocaleString()}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+              {transactions.length > 10 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAllTransactions(!showAllTransactions)}
+                  className="w-full mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all duration-300"
+                >
+                  {showAllTransactions ? (
+                    <>
+                      <ChevronUp className="w-4 h-4 mr-2" />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4 mr-2" />
+                      View All {transactions.length} Transactions
+                    </>
+                  )}
+                </Button>
+              )}
+            </>
           )}
         </Card>
 
@@ -486,6 +612,7 @@ const Budget: React.FC = () => {
               onClick={analyzeSpending}
               disabled={analyzingSpending || transactions.length === 0}
               variant="default"
+              className='bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all'
             >
               {analyzingSpending ? (
                 <>
@@ -494,62 +621,25 @@ const Budget: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Analyze Spending
+                  <TrendingUp className="w-4 h-4 mr-2 " />
+                  {analysis ? 'Refresh Analysis' : 'Analyze Spending'}
                 </>
               )}
             </Button>
+
           </div>
 
-          {analysis ? (
-            <div className="space-y-6">
-              <div>
-                <h4 className="font-semibold mb-2">Summary</h4>
-                <p className="text-foreground/90">{analysis.summary}</p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-2">Insights</h4>
-                <ul className="space-y-2">
-                  {analysis.insights.map((insight: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-accent">•</span>
-                      <span>{insight}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-2">Recommendations</h4>
-                <ul className="space-y-2">
-                  {analysis.recommendations.map((rec: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-blue-600">
-                      <span>✓</span>
-                      <span>{rec}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-2">Savings Opportunities</h4>
-                <ul className="space-y-2">
-                  {analysis.savingsOpportunities.map((opp: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-accent">
-                      <span>💡</span>
-                      <span>{opp}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>Add transactions and click "Analyze Spending" to get AI-powered insights</p>
-            </div>
-          )}
+          {/* Interactive Charts */}
+          <SpendingCharts transactions={transactions} analysis={analysis} />
         </Card>
+
+        {/* Edit Transaction Dialog */}
+        <EditTransactionDialog
+          transaction={editingTransaction}
+          open={!!editingTransaction}
+          onOpenChange={(open) => !open && setEditingTransaction(null)}
+          onTransactionUpdated={handleTransactionUpdated}
+        />
       </main>
     </div>
   );
@@ -557,4 +647,3 @@ const Budget: React.FC = () => {
 
 export default Budget;
 
- 

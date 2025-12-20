@@ -46,7 +46,7 @@ const createTransactionSchema = z.object({
     .positive('Amount must be a positive number')
     .max(999999999.99, 'Amount too large'),
   type: z.enum(['income', 'expense'], {
-    errorMap: () => ({ message: 'Type must be either income or expense' })
+    message: 'Type must be either income or expense'
   }),
   category: z.string()
     .min(1, 'Category is required')
@@ -57,21 +57,34 @@ const createTransactionSchema = z.object({
     .trim()
     .optional(),
   date: z.string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
     .refine((dateStr) => {
       const date = new Date(dateStr);
       return !isNaN(date.getTime());
-    }, 'Invalid date')
-    .refine((dateStr) => {
+    }, 'Invalid date format')
+    .transform((dateStr: string) => {
+      const date = new Date(dateStr);
+      // Handle cases where AI might provide 2-digit years (e.g., year 24 instead of 2024)
+      if (date.getFullYear() < 100) {
+        date.setFullYear(date.getFullYear() + 2000);
+        return date.toISOString().split('T')[0];
+      }
+      return dateStr;
+    })
+    .superRefine((dateStr: string, ctx) => {
       const date = new Date(dateStr);
       const now = new Date();
-      const threeYearsAgo = new Date();
-      threeYearsAgo.setFullYear(now.getFullYear() - 3);
-      const oneYearFuture = new Date();
-      oneYearFuture.setFullYear(now.getFullYear() + 1);
-      
-      return date >= threeYearsAgo && date <= oneYearFuture;
-    }, 'Date must be within the last 3 years and not more than 1 year in the future'),
+      const thirtyYearsAgo = new Date();
+      thirtyYearsAgo.setFullYear(now.getFullYear() - 30);
+      const tenYearsFuture = new Date();
+      tenYearsFuture.setFullYear(now.getFullYear() + 10);
+
+      if (date < thirtyYearsAgo || date > tenYearsFuture) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Date is out of range (${dateStr}). Must be between 30 years ago and 10 years future.`,
+        });
+      }
+    }),
 });
 
 export async function POST(request: NextRequest) {

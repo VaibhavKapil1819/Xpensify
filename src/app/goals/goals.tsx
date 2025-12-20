@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Target, 
-  Plus, 
+import {
+  Target,
+  Plus,
   Sparkles,
   TrendingUp,
   Calendar,
@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import DashboardNav from '@/components/DashboardNav';
 import { useRouter } from 'next/navigation';
 import { DashboardSkeleton } from '@/components/DashboardSkeletons';
+import { buttonClassName, progressClassName } from '@/models/constants';
 
 interface Goal {
   id: string;
@@ -135,7 +136,7 @@ export default function Goals() {
     } catch (error: any) {
       console.error('Error loading goals:', error);
       toast.error(error.message || 'Failed to load goals');
-      
+
       if (error.message === 'Unauthorized') {
         navigate.push('/auth');
       }
@@ -147,7 +148,7 @@ export default function Goals() {
   const loadMilestones = async (goalId: string): Promise<Milestone[]> => {
     try {
       setLoadingMilestones(true);
-      
+
       const response = await fetch(`/api/goals/${goalId}/milestones`, {
         method: 'GET',
         credentials: 'include',
@@ -160,10 +161,10 @@ export default function Goals() {
 
       const data = await response.json();
       const loadedMilestones = data.milestones || [];
-      
+
       setMilestones(loadedMilestones);
       console.log('Milestones set in state:', loadedMilestones.length);
-      
+
       return loadedMilestones;
     } catch (error: any) {
       console.error('Error loading milestones:', error);
@@ -244,7 +245,7 @@ export default function Goals() {
       // Step 3: Update goal with AI completion probability (if not already set)
       if (!goal.ai_completion_probability && aiData.completion_probability) {
         console.log('Updating goal with probability:', aiData.completion_probability);
-        
+
         const patchResponse = await fetch(`/api/goals/${goal.id}`, {
           method: 'PATCH',
           headers: {
@@ -262,10 +263,10 @@ export default function Goals() {
         } else {
           const patchData = await patchResponse.json();
           console.log('Goal updated:', patchData);
-          
+
           // Update the selected goal state with new probability
           setSelectedGoal(prev => prev ? { ...prev, ai_completion_probability: aiData.completion_probability } : null);
-          
+
           // Refresh goals list to show updated probability
           await loadGoalsData();
         }
@@ -352,7 +353,7 @@ export default function Goals() {
   const handleSelectGoal = async (goal: Goal) => {
     setSelectedGoal(goal);
     const loadedMilestones = await loadMilestones(goal.id);
-    
+
     // If no milestones exist for this goal, automatically generate them
     if (loadedMilestones.length === 0) {
       await generateMilestonesForGoal(goal);
@@ -362,7 +363,7 @@ export default function Goals() {
   const toggleMilestone = async (milestone: Milestone) => {
     try {
       const response = await fetch(`/api/milestones/${milestone.id}/toggle`, {
-        method: 'PATCH', 
+        method: 'PATCH',
         credentials: 'include',
       });
 
@@ -407,7 +408,7 @@ export default function Goals() {
             <h1 className="text-3xl font-bold mac-text-primary mb-2">Financial Goals</h1>
             <p className="mac-text-secondary">Set targets, track progress, and achieve your financial dreams</p>
           </div>
-          
+
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button className='bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all' variant="default" size="lg">
@@ -419,7 +420,7 @@ export default function Goals() {
               <DialogHeader>
                 <DialogTitle className="text-2xl mac-text-primary">Set Your Financial Target</DialogTitle>
               </DialogHeader>
-              
+
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="title">What do you want to achieve? *</Label>
@@ -469,8 +470,8 @@ export default function Goals() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="category">Category</Label>
-                    <Select 
-                      value={newGoal.category} 
+                    <Select
+                      value={newGoal.category}
                       onValueChange={(value) => setNewGoal({ ...newGoal, category: value })}
                     >
                       <SelectTrigger id="category">
@@ -500,10 +501,10 @@ export default function Goals() {
                 </div>
               </div>
 
-              <Button 
-                onClick={handleCreateGoal} 
-                variant="default" 
-                className="w-full"
+              <Button
+                onClick={handleCreateGoal}
+                variant="default"
+                className={`w-full ${buttonClassName}`}
                 disabled={creatingGoal}
               >
                 {creatingGoal ? (
@@ -557,18 +558,17 @@ export default function Goals() {
               {goals.map((goal) => {
                 const targetAmount = Number(goal.target_amount || 0);
                 const currentAmount = Number(goal.current_amount);
-                const progress = targetAmount > 0 
-                  ? (currentAmount / targetAmount) * 100 
+                const progress = targetAmount > 0
+                  ? (currentAmount / targetAmount) * 100
                   : 0;
-                
+
                 const { icon: CategoryIcon, color, bgColor } = getCategoryIcon(goal.category);
-                
+
                 return (
-                  <Card 
+                  <Card
                     key={goal.id}
-                    className={`mac-card p-4 cursor-pointer transition-all hover:shadow-lg ${
-                      selectedGoal?.id === goal.id ? 'ring-2 ring-blue-500' : ''
-                    }`}
+                    className={`mac-card p-4 cursor-pointer transition-all hover:shadow-lg ${selectedGoal?.id === goal.id ? 'ring-2 ring-blue-500' : ''
+                      }`}
                     onClick={() => handleSelectGoal(goal)}
                   >
                     <div className="flex items-start gap-3 mb-3">
@@ -594,7 +594,7 @@ export default function Goals() {
                         </div>
                       </div>
                     </div>
-                    <Progress value={progress} className="h-2 mb-2" />
+                    <Progress value={progress} className={`h-2 mb-2 ${progressClassName}`} />
                     <div className="flex items-center justify-between text-sm">
                       <span className="mac-text-secondary text-xs">
                         {profile?.currency || 'USD'} {currentAmount.toLocaleString()}
@@ -660,8 +660,8 @@ export default function Goals() {
                       )}
                     </div>
 
-                    <Progress 
-                      value={(Number(selectedGoal.current_amount) / Number(selectedGoal.target_amount || 1)) * 100} 
+                    <Progress
+                      value={(Number(selectedGoal.current_amount) / Number(selectedGoal.target_amount || 1)) * 100}
                       className="h-3"
                     />
                   </Card>
@@ -671,7 +671,7 @@ export default function Goals() {
                       <Sparkles className="w-5 h-5 text-blue-600" />
                       Steps to Achieve Your Target
                     </h3>
-                    
+
                     {loadingMilestones ? (
                       <Card className="mac-card p-8 text-center">
                         <div className="w-12 h-12 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin mx-auto" />
@@ -684,24 +684,22 @@ export default function Goals() {
                     ) : (
                       <div className="space-y-3">
                         {milestones.map((milestone, index) => (
-                          <Card 
+                          <Card
                             key={milestone.id}
-                            className={`mac-card p-4 transition-all ${
-                              milestone.completed ? 'opacity-60' : ''
-                            }`}
+                            className={`mac-card p-4 transition-all ${milestone.completed ? 'opacity-60' : ''
+                              }`}
                           >
                             <div className="flex items-start gap-3">
                               <button
                                 onClick={() => toggleMilestone(milestone)}
-                                className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                                  milestone.completed
-                                    ? 'bg-blue-600 border-blue-600'
-                                    : 'border-gray-300 hover:border-blue-600'
-                                }`}
+                                className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${milestone.completed
+                                  ? 'bg-blue-600 border-blue-600'
+                                  : 'border-gray-300 hover:border-blue-600'
+                                  }`}
                               >
                                 {milestone.completed && <CheckCircle2 className="w-4 h-4 text-white" />}
                               </button>
-                              
+
                               <div className="flex-1">
                                 <div className="flex items-start justify-between mb-1">
                                   <h4 className={`font-semibold mac-text-primary ${milestone.completed ? 'line-through' : ''}`}>
@@ -752,6 +750,6 @@ export default function Goals() {
     </div>
   );
 }
- 
- 
+
+
 

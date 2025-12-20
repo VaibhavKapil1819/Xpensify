@@ -29,6 +29,7 @@ import type {
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 
 import { insightsSchema } from "../api/ai/dashboard-insights/schema";
+import { progressClassName } from "@/models/constants";
 
 // Cache configuration
 
@@ -363,7 +364,7 @@ export default function Dashboard() {
 
                     <Progress
                       value={wellnessScore}
-                      className="h-2 [&>div]:bg-blue-600"
+                      className={progressClassName}
                     />
                   </Card>
                 </div>

@@ -49,6 +49,7 @@ import {
   MessageResponse,
 } from '@/components/ai-elements/message';
 import { Loader } from '@/components/ai-elements/loader';
+import { buttonClassName } from '@/models/constants';
 
 const LearningCoach: React.FC = () => {
   const { user } = useAuth();
@@ -799,11 +800,11 @@ const LearningCoach: React.FC = () => {
                       <div className="space-y-2 text-xs">
                         <div>
                           <span className="mac-text-secondary">Level:</span>
-                          <Badge className="ml-2 capitalize">{preferences.knowledge_level}</Badge>
+                          <Badge className="ml-2 capitalize bg-blue-100 text-blue-700">{preferences.knowledge_level}</Badge>
                         </div>
                         <div>
                           <span className="mac-text-secondary">Style:</span>
-                          <Badge className="ml-2 capitalize">{preferences.learning_style}</Badge>
+                          <Badge className="ml-2 capitalize bg-blue-100 text-blue-700">{preferences.learning_style}</Badge>
                         </div>
                       </div>
                       <Button
@@ -926,7 +927,7 @@ const WelcomeScreen: React.FC<{ onComplete: (prefs: SavePreferencesRequest) => v
                 ))}
               </div>
             </div>
-            <Button onClick={() => setStep(2)} className="w-full">
+            <Button onClick={() => setStep(2)} className={`w-full ${buttonClassName}`}>
               Next
             </Button>
           </div>
@@ -1059,15 +1060,15 @@ const CourseLibrary: React.FC<CourseLibraryProps> = ({
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="mac-text-secondary">Progress</span>
+                <span className="mac-text-secondary ">Progress</span>
                 <span className="font-medium text-blue-600">{course.progress}%</span>
               </div>
-              <Progress value={course.progress} className="h-2" />
+              <Progress value={course.progress} className="h-2 [&>div]:bg-blue-600" />
             </div>
 
             <Button
               onClick={() => onSelectCourse(course.id)}
-              className="w-full"
+              className={`w-full ${buttonClassName}`}
               variant={course.progress > 0 ? 'default' : 'outline'}
             >
               {course.progress > 0 ? 'Continue Learning' : 'Start Course'}
