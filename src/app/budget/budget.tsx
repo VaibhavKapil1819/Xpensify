@@ -19,13 +19,15 @@ import {
   Loader2,
   Lightbulb,
   ArrowUpCircle,
-  ArrowDownCircle
+  ArrowDownCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardNav from '@/components/DashboardNav';
 import SmartUpload from '@/components/SmartUpload';
 import { useRouter } from 'next/navigation';
 import type { Transaction, TransactionType } from '@/types/transactions';
+import { Skeleton } from '@/components/ui/skeleton';
+import BudgetSkeletion from '@/components/budgetSkeletion';
 
 const expenseCategories = [
   'Food & Dining',
@@ -237,9 +239,7 @@ const Budget: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-accent/10">
-        <div className="w-16 h-16 border-4 border-accent/30 border-t-accent rounded-full animate-spin" />
-      </div>
+      <BudgetSkeletion />
     );
   }
 
@@ -256,44 +256,64 @@ const Budget: React.FC = () => {
 
         <div className="grid lg:grid-cols-4 gap-6 mb-6">
           {/* Total Income */}
-          <Card className="glass-card p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm text-muted-foreground">Total Income</h3>
-              <ArrowUpCircle className="w-5 h-5 text-blue-500" />
+          <Card className="mac-card p-6 transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+                <ArrowUpCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <h3 className="text-sm font-medium mac-text-primary">Total Income</h3>
             </div>
-            <p className="text-3xl font-bold text-blue-600">
+            <p className="text-3xl font-bold text-green-600 mb-1">
               ₹{totalIncome.toLocaleString()}
+            </p>
+            <p className="text-xs mac-text-secondary">
+              {income.length} transactions
             </p>
           </Card>
 
 
           {/* Total Expenses */}
-          <Card className="glass-card p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm text-muted-foreground">Total Expenses</h3>
-              <ArrowDownCircle className="w-5 h-5 text-red-500" />
+          <Card className="mac-card p-6 transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <ArrowDownCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-sm font-medium mac-text-primary">Total Expenses</h3>
             </div>
-            <p className="text-3xl font-bold text-red-600">
+            <p className="text-3xl font-bold text-red-600 mb-1">
               ₹{totalExpenses.toLocaleString()}
+            </p>
+            <p className="text-xs mac-text-secondary">
+              {expenses.length} transactions
             </p>
           </Card>
 
           {/* Net Balance */}
-          <Card className="glass-card p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm text-muted-foreground">Net Balance</h3>
-              <TrendingUp className="w-5 h-5 text-accent" />
+          <Card className="mac-card p-6 transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-10 h-10 rounded-full ${netBalance >= 0 ? 'bg-blue-50' : 'bg-red-50'} flex items-center justify-center`}>
+                <TrendingUp className={`w-5 h-5 ${netBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`} />
+              </div>
+              <h3 className="text-sm font-medium mac-text-primary">Net Balance</h3>
             </div>
-            <p className={`text-3xl font-bold ${netBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+            <p className={`text-3xl font-bold mb-1 ${netBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
               ₹{netBalance.toLocaleString()}
+            </p>
+            <p className="text-xs mac-text-secondary">
+              Current month
             </p>
           </Card>
 
           {/* Transactions */}
-          <Card className="glass-card p-6">
-            <h3 className="text-sm text-muted-foreground mb-2">Transactions</h3>
-            <p className="text-3xl font-bold">{transactions.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">
+          <Card className="mac-card p-6 transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
+                <PieChart className="w-5 h-5 text-purple-600" />
+              </div>
+              <h3 className="text-sm font-medium mac-text-primary">Transactions</h3>
+            </div>
+            <p className="text-3xl font-bold mac-text-primary mb-1">{transactions.length}</p>
+            <p className="text-xs mac-text-secondary">
               {income.length} income • {expenses.length} expenses
             </p>
           </Card>
@@ -302,8 +322,12 @@ const Budget: React.FC = () => {
         {/* Add Transaction */}
         <Card className="glass-card p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold">Transactions</h3>
-            <Button variant="outline" size="sm" onClick={() => setShowForm(!showForm)}>
+            <div className="flex items-center gap-2">
+              <PieChart className="w-6 h-6 text-blue-600 rounded-full" />
+              <h3 className="text-xl font-semibold">Transactions</h3>
+            </div>
+
+            <Button className='bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all' variant="outline" size="sm" onClick={() => setShowForm(!showForm)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Transaction
             </Button>
@@ -316,12 +340,13 @@ const Budget: React.FC = () => {
                 <div className="flex gap-3 mt-2">
                   <Button
                     type="button"
+                    className={`flex-1 ${transactionType === 'expense' ? 'bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all' : ''}`}
                     variant={transactionType === 'expense' ? 'default' : 'outline'}
                     onClick={() => {
                       setTransactionType('expense');
                       setNewTransaction({ ...newTransaction, type: 'expense', category: '' });
                     }}
-                    className="flex-1"
+                    
                   >
                     <ArrowDownCircle className="w-4 h-4 mr-2" />
                     Expense
@@ -333,7 +358,7 @@ const Budget: React.FC = () => {
                       setTransactionType('income');
                       setNewTransaction({ ...newTransaction, type: 'income', category: '' });
                     }}
-                    className="flex-1"
+                    className={`flex-1 ${transactionType === 'income' ? 'bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all' : ''}`}
                   >
                     <ArrowUpCircle className="w-4 h-4 mr-2" />
                     Income
@@ -341,7 +366,7 @@ const Budget: React.FC = () => {
                 </div>
               </div>
               <div>
-                <Label>Amount (₹) *</Label>
+                <Label className='mb-2'>Amount (₹) *</Label>
                 <Input
                   type="number"
                   min="0"
@@ -353,7 +378,7 @@ const Budget: React.FC = () => {
                 />
               </div>
               <div>
-                <Label>Category *</Label>
+                <Label className='mb-2'>Category *</Label>
                 <Select
                   value={newTransaction.category}
                   onValueChange={(value) => setNewTransaction({ ...newTransaction, category: value })}
@@ -369,7 +394,7 @@ const Budget: React.FC = () => {
                 </Select>
               </div>
               <div>
-                <Label>Date *</Label>
+                <Label className='mb-2'>Date *</Label>
                 <Input
                   type="date"
                   value={newTransaction.date}
@@ -379,7 +404,7 @@ const Budget: React.FC = () => {
                 />
               </div>
               <div>
-                <Label>Description</Label>
+                <Label className='mb-2'>Description</Label>
                 <Input
                   value={newTransaction.description}
                   onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
@@ -390,6 +415,7 @@ const Budget: React.FC = () => {
               </div>
               <div className="md:col-span-2 flex gap-3">
                 <Button
+                  className='bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all'
                   onClick={addTransaction}
                   variant="default"
                   disabled={addingTransaction}
@@ -453,7 +479,7 @@ const Budget: React.FC = () => {
         <Card className="glass-card p-6 mt-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold flex items-center gap-2">
-              <Lightbulb className="w-6 h-6 text-accent" />
+              <Lightbulb className="w-6 h-6 text-blue-600" />
               AI Spending Analysis
             </h3>
             <Button
@@ -530,3 +556,5 @@ const Budget: React.FC = () => {
 }
 
 export default Budget;
+
+ 

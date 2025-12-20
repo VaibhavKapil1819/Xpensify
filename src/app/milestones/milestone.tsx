@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import DashboardNav from '@/components/DashboardNav';
 import { useRouter } from 'next/navigation';
 import type { Milestone, MilestonesResponse, MilestoneToggleResponse, ApiError } from '@/types/milestone';
+import { DashboardSkeleton } from '@/components/DashboardSkeletons';
 
 export default function Milestones() {
   const { user } = useAuth();
@@ -96,14 +97,7 @@ export default function Milestones() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10">
-        <DashboardNav />
-        <div className="flex items-center justify-center min-h-[60vh] pt-24">
-          <div className="w-16 h-16 border-4 border-accent/30 border-t-accent rounded-full animate-spin" />
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />
   }
 
   const completedCount = milestones.filter(m => m.completed).length;
@@ -111,7 +105,7 @@ export default function Milestones() {
   const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10">
+    <div className="min-h-screen mac-bg">
       <DashboardNav />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-8">
@@ -222,3 +216,4 @@ export default function Milestones() {
     </div>
   );
 }
+ 

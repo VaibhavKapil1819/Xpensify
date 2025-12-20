@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Target,
-  Plus,
+import { 
+  Target, 
+  Plus, 
   Sparkles,
   TrendingUp,
   Calendar,
@@ -135,7 +135,7 @@ export default function Goals() {
     } catch (error: any) {
       console.error('Error loading goals:', error);
       toast.error(error.message || 'Failed to load goals');
-
+      
       if (error.message === 'Unauthorized') {
         navigate.push('/auth');
       }
@@ -144,11 +144,10 @@ export default function Goals() {
     }
   };
 
-  const loadMilestones = async (goalId: string) => {
+  const loadMilestones = async (goalId: string): Promise<Milestone[]> => {
     try {
-      console.log('Loading milestones for goal ID:', goalId);
       setLoadingMilestones(true);
-
+      
       const response = await fetch(`/api/goals/${goalId}/milestones`, {
         method: 'GET',
         credentials: 'include',
@@ -156,20 +155,132 @@ export default function Goals() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Failed to load milestones:', errorData);
         throw new Error(errorData.error || 'Failed to load milestones');
       }
 
       const data = await response.json();
-      console.log('Loaded milestones:', data);
-
-      setMilestones(data.milestones || []);
-      console.log('Milestones set in state:', data.milestones?.length || 0);
+      const loadedMilestones = data.milestones || [];
+      
+      setMilestones(loadedMilestones);
+      console.log('Milestones set in state:', loadedMilestones.length);
+      
+      return loadedMilestones;
     } catch (error: any) {
       console.error('Error loading milestones:', error);
       toast.error(error.message || 'Failed to load milestones');
+      return [];
     } finally {
       setLoadingMilestones(false);
+    }
+  };
+
+  /**
+   * Generates AI milestones for a goal that has no milestones
+   */
+  const generateMilestonesForGoal = async (goal: Goal): Promise<void> => {
+    setGeneratingMilestones(true);
+    toast.info('Generating achievement roadmap for this goal...');
+
+    try {
+      // Step 1: Generate milestones with AI
+      const aiResponse = await fetch('/api/ai/generate-milestones', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          goal: {
+            ...goal,
+            currency: profile?.currency || 'USD',
+          },
+          profile: profile || {},
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error('AI generation failed:', errorText);
+        throw new Error('Failed to generate AI milestones');
+      }
+
+      const aiData = await aiResponse.json();
+      console.log('AI Response:', aiData);
+
+      if (!aiData.milestones || !Array.isArray(aiData.milestones)) {
+        console.error('Invalid AI response format:', aiData);
+        throw new Error('Invalid AI response format');
+      }
+
+      // Step 2: Save milestones to database
+      const milestonesToInsert = aiData.milestones.map((m: any) => ({
+        goal_id: goal.id,
+        title: m.title,
+        description: `${m.description}\n\nAdvice: ${m.advice}`,
+        target_amount: m.target_amount,
+        due_date: m.due_date,
+      }));
+
+      console.log('Saving milestones:', milestonesToInsert);
+
+      const saveMilestonesResponse = await fetch('/api/milestones', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ milestones: milestonesToInsert }),
+      });
+
+      if (!saveMilestonesResponse.ok) {
+        const errorData = await saveMilestonesResponse.json();
+        console.error('Failed to save milestones:', errorData);
+        throw new Error(errorData.error || 'Failed to save milestones');
+      }
+
+      const savedMilestonesData = await saveMilestonesResponse.json();
+      console.log('Milestones saved:', savedMilestonesData);
+
+      // Step 3: Update goal with AI completion probability (if not already set)
+      if (!goal.ai_completion_probability && aiData.completion_probability) {
+        console.log('Updating goal with probability:', aiData.completion_probability);
+        
+        const patchResponse = await fetch(`/api/goals/${goal.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            ai_completion_probability: aiData.completion_probability,
+          }),
+        });
+
+        if (!patchResponse.ok) {
+          const patchError = await patchResponse.json();
+          console.error('Failed to update goal probability:', patchError);
+        } else {
+          const patchData = await patchResponse.json();
+          console.log('Goal updated:', patchData);
+          
+          // Update the selected goal state with new probability
+          setSelectedGoal(prev => prev ? { ...prev, ai_completion_probability: aiData.completion_probability } : null);
+          
+          // Refresh goals list to show updated probability
+          await loadGoalsData();
+        }
+      }
+
+      toast.success('Achievement roadmap generated! 🎉');
+
+      // Reload milestones to show the newly created ones
+      await loadMilestones(goal.id);
+
+    } catch (aiError: any) {
+      console.error('AI generation error:', aiError);
+      toast.error(aiError.message || 'Failed to generate AI milestones');
+    } finally {
+      setGeneratingMilestones(false);
     }
   };
 
@@ -209,97 +320,9 @@ export default function Goals() {
       const createdGoal = data.goal;
       toast.success('Target set! Creating your achievement roadmap...');
       setShowCreateDialog(false);
-      setGeneratingMilestones(true);
 
-      // Step 2: Generate milestones with AI
-      try {
-        console.log('Generating AI milestones for goal:', createdGoal.id);
-
-        const aiResponse = await fetch('/api/ai/generate-milestones', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            goal: {
-              ...createdGoal,
-              currency: newGoal.currency,
-            },
-            profile: profile || {},
-          }),
-        });
-
-        if (!aiResponse.ok) {
-          const errorText = await aiResponse.text();
-          console.error('AI generation failed:', errorText);
-          throw new Error('Failed to generate AI milestones');
-        }
-
-        const aiData = await aiResponse.json();
-        console.log('AI Response:', aiData);
-
-        if (!aiData.milestones || !Array.isArray(aiData.milestones)) {
-          console.error('Invalid AI response format:', aiData);
-          throw new Error('Invalid AI response format');
-        }
-
-        // Step 3: Save milestones to database
-        const milestonesToInsert = aiData.milestones.map((m: any) => ({
-          goal_id: createdGoal.id,
-          title: m.title,
-          description: `${m.description}\n\nAdvice: ${m.advice}`,
-          target_amount: m.target_amount,
-          due_date: m.due_date,
-        }));
-
-        console.log('Saving milestones:', milestonesToInsert);
-
-        const saveMilestonesResponse = await fetch('/api/milestones', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ milestones: milestonesToInsert }),
-        });
-
-        if (!saveMilestonesResponse.ok) {
-          const errorData = await saveMilestonesResponse.json();
-          console.error('Failed to save milestones:', errorData);
-          throw new Error(errorData.error || 'Failed to save milestones');
-        }
-
-        const savedMilestonesData = await saveMilestonesResponse.json();
-        console.log('Milestones saved:', savedMilestonesData);
-
-        // Step 4: Update goal with AI completion probability
-        console.log('Updating goal with probability:', aiData.completion_probability);
-
-        const patchResponse = await fetch(`/api/goals/${createdGoal.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            ai_completion_probability: aiData.completion_probability,
-          }),
-        });
-
-        if (!patchResponse.ok) {
-          const patchError = await patchResponse.json();
-          console.error('Failed to update goal probability:', patchError);
-        } else {
-          const patchData = await patchResponse.json();
-          console.log('Goal updated:', patchData);
-        }
-
-        toast.success('Your achievement roadmap is ready! 🎉');
-      } catch (aiError: any) {
-        console.error('AI generation error:', aiError);
-        toast.error(aiError.message || 'Created goal but failed to generate AI milestones');
-      }
+      // Step 2: Generate milestones with AI using the reusable function
+      await generateMilestonesForGoal(createdGoal);
 
       // Reload goals to get updated data
       await loadGoalsData();
@@ -315,35 +338,31 @@ export default function Goals() {
         currency: 'USD'
       });
 
-      // Auto-select the new goal and load its milestones
-      // Use the createdGoal which has the goal ID
-      const goalToSelect = createdGoal;
-      setSelectedGoal(goalToSelect);
-
-      // Load milestones for the newly created goal
-      console.log('Loading milestones for goal:', goalToSelect.id);
-      await loadMilestones(goalToSelect.id);
+      // Auto-select the new goal
+      setSelectedGoal(createdGoal);
 
     } catch (error: any) {
       console.error('Error creating goal:', error);
       toast.error(error.message || 'Failed to create goal');
     } finally {
       setCreatingGoal(false);
-      setGeneratingMilestones(false);
     }
   };
 
   const handleSelectGoal = async (goal: Goal) => {
     setSelectedGoal(goal);
-    await loadMilestones(goal.id);
+    const loadedMilestones = await loadMilestones(goal.id);
+    
+    // If no milestones exist for this goal, automatically generate them
+    if (loadedMilestones.length === 0) {
+      await generateMilestonesForGoal(goal);
+    }
   };
 
   const toggleMilestone = async (milestone: Milestone) => {
     try {
-      console.log('Toggling milestone:', milestone.id);
-
       const response = await fetch(`/api/milestones/${milestone.id}/toggle`, {
-        method: 'PATCH',  // Changed from POST to PATCH
+        method: 'PATCH', 
         credentials: 'include',
       });
 
@@ -357,13 +376,20 @@ export default function Goals() {
 
       toast.success(data.message);
 
-      // Reload milestones
-      if (selectedGoal) {
-        console.log('Reloading milestones after toggle');
-        await loadMilestones(selectedGoal.id);
+      // Update milestones state directly with the updated milestone from response
+      if (data.milestone) {
+        setMilestones(prevMilestones =>
+          prevMilestones.map(m =>
+            m.id === data.milestone.id ? data.milestone : m
+          )
+        );
+      } else {
+        // Fallback: Reload milestones if response doesn't include updated milestone
+        if (selectedGoal) {
+          await loadMilestones(selectedGoal.id);
+        }
       }
     } catch (error: any) {
-      console.error('Error toggling milestone:', error);
       toast.error(error.message || 'Failed to update milestone');
     }
   };
@@ -381,10 +407,10 @@ export default function Goals() {
             <h1 className="text-3xl font-bold mac-text-primary mb-2">Financial Goals</h1>
             <p className="mac-text-secondary">Set targets, track progress, and achieve your financial dreams</p>
           </div>
-
+          
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button variant="default" size="lg">
+              <Button className='bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all' variant="default" size="lg">
                 <Plus className="w-5 h-5 mr-2" />
                 Set New Target
               </Button>
@@ -393,7 +419,7 @@ export default function Goals() {
               <DialogHeader>
                 <DialogTitle className="text-2xl mac-text-primary">Set Your Financial Target</DialogTitle>
               </DialogHeader>
-
+              
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="title">What do you want to achieve? *</Label>
@@ -443,8 +469,8 @@ export default function Goals() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="category">Category</Label>
-                    <Select
-                      value={newGoal.category}
+                    <Select 
+                      value={newGoal.category} 
                       onValueChange={(value) => setNewGoal({ ...newGoal, category: value })}
                     >
                       <SelectTrigger id="category">
@@ -474,9 +500,9 @@ export default function Goals() {
                 </div>
               </div>
 
-              <Button
-                onClick={handleCreateGoal}
-                variant="default"
+              <Button 
+                onClick={handleCreateGoal} 
+                variant="default" 
                 className="w-full"
                 disabled={creatingGoal}
               >
@@ -531,17 +557,18 @@ export default function Goals() {
               {goals.map((goal) => {
                 const targetAmount = Number(goal.target_amount || 0);
                 const currentAmount = Number(goal.current_amount);
-                const progress = targetAmount > 0
-                  ? (currentAmount / targetAmount) * 100
+                const progress = targetAmount > 0 
+                  ? (currentAmount / targetAmount) * 100 
                   : 0;
-
+                
                 const { icon: CategoryIcon, color, bgColor } = getCategoryIcon(goal.category);
-
+                
                 return (
-                  <Card
+                  <Card 
                     key={goal.id}
-                    className={`mac-card p-4 cursor-pointer transition-all hover:shadow-lg ${selectedGoal?.id === goal.id ? 'ring-2 ring-blue-500' : ''
-                      }`}
+                    className={`mac-card p-4 cursor-pointer transition-all hover:shadow-lg ${
+                      selectedGoal?.id === goal.id ? 'ring-2 ring-blue-500' : ''
+                    }`}
                     onClick={() => handleSelectGoal(goal)}
                   >
                     <div className="flex items-start gap-3 mb-3">
@@ -633,8 +660,8 @@ export default function Goals() {
                       )}
                     </div>
 
-                    <Progress
-                      value={(Number(selectedGoal.current_amount) / Number(selectedGoal.target_amount || 1)) * 100}
+                    <Progress 
+                      value={(Number(selectedGoal.current_amount) / Number(selectedGoal.target_amount || 1)) * 100} 
                       className="h-3"
                     />
                   </Card>
@@ -644,7 +671,7 @@ export default function Goals() {
                       <Sparkles className="w-5 h-5 text-blue-600" />
                       Steps to Achieve Your Target
                     </h3>
-
+                    
                     {loadingMilestones ? (
                       <Card className="mac-card p-8 text-center">
                         <div className="w-12 h-12 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin mx-auto" />
@@ -657,22 +684,24 @@ export default function Goals() {
                     ) : (
                       <div className="space-y-3">
                         {milestones.map((milestone, index) => (
-                          <Card
+                          <Card 
                             key={milestone.id}
-                            className={`mac-card p-4 transition-all ${milestone.completed ? 'opacity-60' : ''
-                              }`}
+                            className={`mac-card p-4 transition-all ${
+                              milestone.completed ? 'opacity-60' : ''
+                            }`}
                           >
                             <div className="flex items-start gap-3">
                               <button
                                 onClick={() => toggleMilestone(milestone)}
-                                className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${milestone.completed
-                                  ? 'bg-blue-600 border-blue-600'
-                                  : 'border-gray-300 hover:border-blue-600'
-                                  }`}
+                                className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                                  milestone.completed
+                                    ? 'bg-blue-600 border-blue-600'
+                                    : 'border-gray-300 hover:border-blue-600'
+                                }`}
                               >
                                 {milestone.completed && <CheckCircle2 className="w-4 h-4 text-white" />}
                               </button>
-
+                              
                               <div className="flex-1">
                                 <div className="flex items-start justify-between mb-1">
                                   <h4 className={`font-semibold mac-text-primary ${milestone.completed ? 'line-through' : ''}`}>
@@ -723,4 +752,6 @@ export default function Goals() {
     </div>
   );
 }
+ 
+ 
 
