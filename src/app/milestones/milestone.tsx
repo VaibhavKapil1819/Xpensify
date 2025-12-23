@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import DashboardNav from '@/components/DashboardNav';
 import { useRouter } from 'next/navigation';
 import type { Milestone, MilestonesResponse, MilestoneToggleResponse, ApiError } from '@/types/milestone';
+import { DashboardSkeleton } from '@/components/DashboardSkeletons';
 
 export default function Milestones() {
   const { user } = useAuth();
@@ -27,7 +28,7 @@ export default function Milestones() {
   const loadMilestones = async (goalId?: string) => {
     try {
       setLoading(true);
-      
+
       // Build URL with optional goalId query param
       const url = new URL('/api/milestones', window.location.origin);
       if (goalId) {
@@ -76,14 +77,14 @@ export default function Milestones() {
       }
 
       const data: MilestoneToggleResponse = await response.json();
-      
+
       // Update the milestone in state optimistically
       setMilestones(prevMilestones =>
         prevMilestones.map(m =>
           m.id === milestoneId ? data.milestone : m
         )
       );
-      
+
       toast.success(data.message);
     } catch (error) {
       console.error('Error updating milestone:', error);
@@ -96,14 +97,7 @@ export default function Milestones() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10">
-        <DashboardNav />
-        <div className="flex items-center justify-center min-h-[60vh] pt-24">
-          <div className="w-16 h-16 border-4 border-accent/30 border-t-accent rounded-full animate-spin" />
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />
   }
 
   const completedCount = milestones.filter(m => m.completed).length;
@@ -111,12 +105,12 @@ export default function Milestones() {
   const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10">
+    <div className="min-h-screen mac-bg">
       <DashboardNav />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-8">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => navigate.push('/dashboard')}
             className="mb-4"
           >
@@ -141,7 +135,7 @@ export default function Milestones() {
                 {completedCount}/{totalCount}
               </span>
             </div>
-            <Progress value={completionRate} className="h-3 mb-2" />
+            <Progress value={completionRate} className="h-3 mb-2 [&>div]:bg-blue-600" />
             <p className="text-sm text-muted-foreground">
               {completionRate.toFixed(0)}% of all milestones completed
             </p>
@@ -162,11 +156,10 @@ export default function Milestones() {
         ) : (
           <div className="space-y-4">
             {milestones.map((milestone) => (
-              <Card 
+              <Card
                 key={milestone.id}
-                className={`glass-card p-6 transition-all ${
-                  milestone.completed ? 'opacity-75' : ''
-                }`}
+                className={`glass-card p-6 transition-all ${milestone.completed ? 'opacity-75' : ''
+                  }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -174,11 +167,10 @@ export default function Milestones() {
                       <button
                         onClick={() => toggleMilestone(milestone.id)}
                         disabled={togglingId === milestone.id}
-                        className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                          milestone.completed
+                        className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${milestone.completed
                             ? 'bg-accent border-accent'
                             : 'border-muted-foreground hover:border-accent'
-                        } ${togglingId === milestone.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          } ${togglingId === milestone.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                       >
                         {togglingId === milestone.id ? (
                           <div className="w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -187,9 +179,8 @@ export default function Milestones() {
                         ) : null}
                       </button>
                       <div className="flex-1">
-                        <h3 className={`text-lg font-semibold mb-1 ${
-                          milestone.completed ? 'line-through text-muted-foreground' : ''
-                        }`}>
+                        <h3 className={`text-lg font-semibold mb-1 ${milestone.completed ? 'line-through text-muted-foreground' : ''
+                          }`}>
                           {milestone.title}
                         </h3>
                         {milestone.goal?.title && (

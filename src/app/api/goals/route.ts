@@ -98,24 +98,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // TODO: Generate AI milestones (integrate with AI service later)
-    // For now, create basic milestones
-    const targetAmount = validatedData.target_amount;
-    const milestoneCount = 4;
-    const milestoneAmount = targetAmount / milestoneCount;
+    console.log('Goal created successfully:', goal.id);
 
-    const basicMilestones = Array.from({ length: milestoneCount }, (_, i) => ({
-      goal_id: goal.id,
-      title: `Milestone ${i + 1}: Save ${((i + 1) * 25)}%`,
-      description: `Reach ${validatedData.currency} ${((i + 1) * milestoneAmount).toFixed(2)} towards your goal`,
-      target_amount: (i + 1) * milestoneAmount,
-      completed: false,
-      due_date: null,
-    }));
-
-    await prisma.milestone.createMany({
-      data: basicMilestones,
-    });
+    // Note: Milestones will be generated via AI in the frontend flow
+    // The frontend calls /api/ai/generate-millestones and then /api/milestones
 
     return NextResponse.json({
       success: true,
@@ -141,5 +127,4 @@ export async function POST(request: NextRequest) {
 }
 
 
-
-
+ 

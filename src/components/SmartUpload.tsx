@@ -30,7 +30,7 @@ export default function SmartUpload({ userId, onTransactionsExtracted }: SmartUp
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFile(e.dataTransfer.files[0]);
     }
@@ -54,7 +54,7 @@ export default function SmartUpload({ userId, onTransactionsExtracted }: SmartUp
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ];
-    
+
     if (!validTypes.includes(selectedFile.type)) {
       toast.error('Invalid file type. Please upload PDF, PNG, JPG, or text files.');
       return;
@@ -80,17 +80,23 @@ export default function SmartUpload({ userId, onTransactionsExtracted }: SmartUp
       // Convert file to base64
       const base64 = await fileToBase64(file);
 
-      // Call the parse-transactions edge function
-      const { data, error } = await supabase.functions.invoke('parse-transactions', {
-        body: { 
+      // Call the local parse-transactions API
+      const response = await fetch('/api/transactions/parse', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           file: base64,
           fileName: file.name,
           fileType: file.type,
           userId
-        }
+        }),
       });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || 'Failed to parse transactions');
 
       if (!data?.transactions || data.transactions.length === 0) {
         toast.error('No transactions found in the uploaded file');
@@ -146,9 +152,8 @@ export default function SmartUpload({ userId, onTransactionsExtracted }: SmartUp
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          dragActive ? 'border-accent bg-accent/5' : 'border-muted-foreground/20'
-        }`}
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive ? 'border-accent bg-accent/5' : 'border-muted-foreground/20'
+          }`}
       >
         {!file ? (
           <>
@@ -227,8 +232,8 @@ export default function SmartUpload({ userId, onTransactionsExtracted }: SmartUp
 
       <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
         <p className="text-xs text-blue-600 dark:text-blue-400">
-          💡 <strong>Tip:</strong> For best results, upload clear images or PDFs of receipts, 
-          bank statements, or expense reports. The AI will automatically detect and extract 
+          💡 <strong>Tip:</strong> For best results, upload clear images or PDFs of receipts,
+          bank statements, or expense reports. The AI will automatically detect and extract
           transaction details including amounts, dates, categories, and descriptions.
         </p>
       </div>

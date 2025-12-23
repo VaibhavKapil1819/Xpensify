@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { buttonClassName } from '@/models/constants';
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -93,7 +94,7 @@ export default function Auth() {
             type="submit"
             variant="default"
             size="lg"
-            className="w-full"
+            className={`w-full ${buttonClassName}`}
             disabled={loading}
           >
             {loading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}

@@ -10,6 +10,13 @@ const signUpSchema = z.object({
     fullName: z.string().min(1, 'Full name is required'),
 });
 
+// Helper to check if error is a database connection error
+function isDatabaseConnectionError(error: any): boolean {
+    return error?.code === 'P1001' || 
+           error?.message?.includes('Can\'t reach database server') ||
+           error?.message?.includes('connection');
+}
+
 export async function POST(request: NextRequest) {
     try {
         // Parse and validate request body
@@ -19,9 +26,24 @@ export async function POST(request: NextRequest) {
         const { email, password, fullName } = validatedData;
 
         // Check if user already exists
-        const existingUser = await prisma.profile.findUnique({
+        let existingUser;
+        try {
+            existingUser = await prisma.profile.findUnique({
             where: { email },
         });
+        } catch (dbError: any) {
+            if (isDatabaseConnectionError(dbError)) {
+                console.error('Database connection error during signup:', dbError);
+                return NextResponse.json(
+                    { 
+                        error: 'Database temporarily unavailable',
+                        message: 'Unable to create account. Please check your database connection and try again later.',
+                    },
+                    { status: 503 }
+                );
+            }
+            throw dbError;
+        }
 
         if (existingUser) {
             return NextResponse.json(
@@ -34,7 +56,9 @@ export async function POST(request: NextRequest) {
         const passwordHash = await hashPassword(password);
 
         // Create user
-        const user = await prisma.profile.create({
+        let user;
+        try {
+            user = await prisma.profile.create({
             data: {
                 email,
                 password_hash: passwordHash,
@@ -52,6 +76,19 @@ export async function POST(request: NextRequest) {
                 updated_at: true,
             },
         });
+        } catch (dbError: any) {
+            if (isDatabaseConnectionError(dbError)) {
+                console.error('Database connection error during user creation:', dbError);
+                return NextResponse.json(
+                    { 
+                        error: 'Database temporarily unavailable',
+                        message: 'Unable to create account. Please check your database connection and try again later.',
+                    },
+                    { status: 503 }
+                );
+            }
+            throw dbError;
+        }
 
         // Generate JWT token
         const token = generateToken({
@@ -72,7 +109,7 @@ export async function POST(request: NextRequest) {
             },
         }, { status: 201 });
 
-    } catch (error) {
+    } catch (error: any) {
         if (error instanceof z.ZodError) {
             const firstError = error.issues[0];
             return NextResponse.json(
@@ -81,9 +118,21 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Handle database connection errors
+        if (isDatabaseConnectionError(error)) {
+            console.error('Database connection error during signup:', error);
+            return NextResponse.json(
+                { 
+                    error: 'Database temporarily unavailable',
+                    message: 'Unable to create account. Please check your database connection and try again later.',
+                },
+                { status: 503 }
+            );
+        }
+
         console.error('Signup error:', error);
         return NextResponse.json(
-            { error: 'An error occurred during signup' },
+            { error: 'An error occurred during signup', message: error.message || 'Unknown error' },
             { status: 500 }
         );
     }

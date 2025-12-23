@@ -99,11 +99,11 @@ const ChatBotDemo = () => {
   return (
     <div className="min-h-screen mac-bg">
       <DashboardNav />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pt-24 relative">
+      <div className="max-w-5xl h-screen mx-auto px-4 sm:px-6 py-6 pt-24 relative">
         {/* Header Section */}
         <div className="mb-6 animate-fade-in">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -295,3 +295,4 @@ const ChatBotDemo = () => {
   );
 };
 export default ChatBotDemo;
+ 
