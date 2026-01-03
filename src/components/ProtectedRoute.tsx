@@ -1,14 +1,14 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from "react";
+import { useRouter } from "next/router";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useRouter();
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth');
+      navigate.replace("/auth");
     }
   }, [user, loading, navigate]);
 
