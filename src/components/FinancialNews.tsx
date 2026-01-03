@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Loader2, RefreshCw, ChevronRight } from "lucide-react";
+import { ExternalLink, Loader2, RefreshCw, ChevronRight, TrendingUp, PiggyBank, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -9,18 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import newsFinance from "@/assets/news-finance.jpg";
-import newsSavings from "@/assets/news-savings.jpg";
-import newsInvestment from "@/assets/news-investment.jpg";
 import Image from "next/image";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { financialNewsSchema } from "@/app/api/ai/generate-news/schema";
-
-// const images={
-//   "news-finance": <Image src={newsFinance} alt="News Finance" />,
-//   "news-savings": <Image src={newsSavings} alt="News Savings" />,
-//   "news-investment": <Image src={newsInvestment} alt="News Investment" />,
-// }
+import { buttonClassName } from "@/models/constants";
 
 // Cache configuration
 const NEWS_CACHE_KEY = "financial_news_cache";
@@ -37,6 +29,27 @@ interface CachedNewsData {
   timestamp: number;
   articles: NewsArticle[];
 }
+
+// Map categories to images
+const categoryImages: Record<string, string> = {
+  "Market Updates": "/assets/news-finance.jpg",
+  "Savings Tips": "/assets/news-savings.jpg",
+  "Investment Strategy": "/assets/news-investment.jpg",
+  "Economy": "/assets/news-finance.jpg",
+  "Personal Finance": "/assets/news-savings.jpg",
+  "Crypto": "/assets/news-investment.jpg",
+};
+
+// Fallback images if specific category not found
+const defaultImages = [
+  "/assets/news-finance.jpg",
+  "/assets/news-savings.jpg",
+  "/assets/news-investment.jpg",
+];
+
+const getCategoryImage = (category: string, index: number) => {
+  return categoryImages[category] || defaultImages[index % defaultImages.length];
+};
 
 /**
  * Retrieves cached news data from sessionStorage
@@ -155,8 +168,13 @@ export default function FinancialNews() {
         </div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-20 bg-gray-100 rounded-lg" />
+            <div key={i} className="animate-pulse flex gap-3">
+              <div className="w-20 h-20 bg-gray-100 rounded-lg flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-100 rounded w-3/4" />
+                <div className="h-3 bg-gray-100 rounded w-full" />
+                <div className="h-3 bg-gray-100 rounded w-1/2" />
+              </div>
             </div>
           ))}
         </div>
@@ -183,35 +201,35 @@ export default function FinancialNews() {
           </Button>
         </div>
 
-        <div className="space-y-3 flex-1 overflow-y-auto">
+        <div className="space-y-3 flex-1 overflow-y-auto pr-1">
           {articles.map((article, index) => (
             <Card
               key={index}
-              className="p-3 mac-card transition-all cursor-pointer group"
+              className="p-3 mac-card transition-all cursor-pointer group hover:shadow-md border border-transparent hover:border-gray-200"
               onClick={() => setSelectedArticle(article)}
             >
               <div className="flex gap-3">
-                <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
-                  {/* <Image
-                    src={categoryImages[article.category] || newsFinance} 
+                <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 relative bg-gray-100">
+                  <Image
+                    src={getCategoryImage(article.category, index)}
                     alt={article.title}
-                    width={80}
-                    height={80}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  /> */}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="80px"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="inline-block px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium mb-1">
+                  <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-semibold mb-1 uppercase tracking-wider">
+                    {article.category === 'Market Updates' && <TrendingUp className="w-3 h-3" />}
+                    {article.category === 'Savings Tips' && <PiggyBank className="w-3 h-3" />}
+                    {article.category === 'Investment Strategy' && <DollarSign className="w-3 h-3" />}
                     {article.category}
                   </div>
-                  <h4 className="font-semibold text-sm mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors mac-text-primary">
+                  <h4 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors mac-text-primary leading-tight">
                     {article.title}
                   </h4>
-                  <p className="text-xs mac-text-secondary line-clamp-2">
-                    {article.description}
-                  </p>
-                  <div className="flex items-center gap-1 text-blue-600 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Read more <ChevronRight className="w-3 h-3" />
+                  <div className="flex items-center gap-1 text-blue-600 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                    Read article <ChevronRight className="w-3 h-3" />
                   </div>
                 </div>
               </div>
@@ -219,9 +237,10 @@ export default function FinancialNews() {
           ))}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-gray-200">
-          <p className="text-xs mac-text-tertiary text-center">
-            AI-powered financial insights • Updated daily
+        <div className="mt-4 pt-3 border-t border-gray-100">
+          <p className="text-xs mac-text-tertiary text-center flex items-center justify-center gap-1">
+            <SparkleIcon className="w-3 h-3 text-blue-500" />
+            AI-powered financial insights
           </p>
         </div>
       </Card>
@@ -230,41 +249,69 @@ export default function FinancialNews() {
         open={!!selectedArticle}
         onOpenChange={() => setSelectedArticle(null)}
       >
-        <DialogContent className="mac-card max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="mac-card max-w-2xl max-h-[80vh] overflow-y-auto p-0 gap-0">
           {selectedArticle && (
-            <>
-              <DialogHeader>
-                <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-sm font-medium mb-2 w-fit">
-                  {selectedArticle.category}
-                </div>
-                <DialogTitle className="text-2xl mac-text-primary">
-                  {selectedArticle.title}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="mt-4">
-                {/* <Image
-                  src={categoryImages[selectedArticle.category] || newsFinance}
-                  width={80}
-                  height={80}
+            <div className="flex flex-col">
+              <div className="relative h-48 w-full bg-gray-100">
+                <Image
+                  src={getCategoryImage(selectedArticle.category, 0)}
                   alt={selectedArticle.title}
-                  className="w-full h-48 object-cover rounded-lg mb-4"
-                /> */}
-                <p className="text-sm mac-text-secondary mb-4 font-medium">
+                  fill
+                  className="object-cover"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+                  <div className="text-white">
+                    <div className="inline-block px-3 py-1 rounded-full bg-blue-600/90 backdrop-blur-sm text-white text-xs font-semibold mb-2">
+                      {selectedArticle.category}
+                    </div>
+                    <DialogTitle className="text-2xl font-bold text-white leading-tight">
+                      {selectedArticle.title}
+                    </DialogTitle>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <p className="text-lg text-gray-700 mb-6 font-medium leading-relaxed border-l-4 border-blue-500 pl-4 bg-blue-50/50 py-2 rounded-r-lg">
                   {selectedArticle.description}
                 </p>
-                <div className="prose prose-sm max-w-none">
+                <div className="prose prose-sm max-w-none text-gray-600">
                   {selectedArticle.content.split("\n\n").map((paragraph, i) => (
-                    <p key={i} className="mb-3 mac-text-primary">
+                    <p key={i} className="mb-4 leading-relaxed">
                       {paragraph}
                     </p>
                   ))}
                 </div>
+
+                <div className="mt-8 flex justify-end">
+                  <Button className={buttonClassName} onClick={() => setSelectedArticle(null)}>
+                    Close Article
+                  </Button>
+                </div>
               </div>
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>
     </>
   );
+}
+
+function SparkleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+    </svg>
+  )
 }
 

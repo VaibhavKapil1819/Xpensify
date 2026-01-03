@@ -319,7 +319,7 @@ const Budget: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen mac-bg">
+    <div className="min-h-screen mac-bg bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900">
       <DashboardNav />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-8 animate-fade-in">
