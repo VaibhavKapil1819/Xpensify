@@ -420,7 +420,7 @@ const LearningCoach: React.FC = () => {
   // Show error state if course failed to load
   if (currentCourseId && courseError) {
     return (
-      <div className="min-h-screen mac-bg flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900 flex items-center justify-center">
         <Card className="mac-card p-8 max-w-md">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-4 mac-text-primary">Failed to Load Course</h2>

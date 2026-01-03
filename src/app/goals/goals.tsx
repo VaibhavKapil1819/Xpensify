@@ -81,6 +81,10 @@ export default function Goals() {
   const [generatingMilestones, setGeneratingMilestones] = useState(false);
   const [loadingMilestones, setLoadingMilestones] = useState(false);
 
+  const completedCount = milestones.filter(m => m.completed).length;
+  const totalCount = milestones.length;
+  const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
   const [newGoal, setNewGoal] = useState({
     title: '',
     description: '',
@@ -400,7 +404,7 @@ export default function Goals() {
   }
 
   return (
-    <div className="min-h-screen mac-bg">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900">
       <DashboardNav />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="flex items-center justify-between mb-8 animate-fade-in">
@@ -661,9 +665,10 @@ export default function Goals() {
                     </div>
 
                     <Progress
-                      value={(Number(selectedGoal.current_amount) / Number(selectedGoal.target_amount || 1)) * 100}
-                      className="h-3"
+                      value={completionRate}
+                      className={`h-2 mb-2 ${progressClassName}`}
                     />
+
                   </Card>
 
                   <div>

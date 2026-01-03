@@ -8,11 +8,14 @@ import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import {
   Target,
-  TrendingUp,
-  GraduationCap,
   Plus,
   MessageCircle,
   Activity,
+  Zap,
+  Award,
+  Flame,
+  Sparkles,
+  ChevronRight,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -49,13 +52,6 @@ interface CachedDashboardData {
   insights: InsightsType;
 }
 
-/**
-
- * Retrieves cached dashboard data from sessionStorage
-
- * Returns null if cache is empty, invalid, or expired (> 30 minutes)
-
- */
 
 const getCachedDashboardData = (): CachedDashboardData | null => {
   if (typeof window === "undefined") return null;
@@ -273,245 +269,299 @@ export default function Dashboard() {
   return (
     <>
       {insights && (
-        <div className="min-h-screen mac-bg">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900">
+          {/* Animated background elements */}
+          <div className="fixed inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-200/10 dark:bg-blue-900/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-200/10 dark:bg-purple-900/10 rounded-full blur-3xl animate-pulse" />
+          </div>
+
           <DashboardNav />
 
-          <main className="container mx-auto px-4 py-8 pt-24">
-            {/* Welcome Section */}
+          <main className="relative z-10 container mx-auto px-4 py-8 pt-24">
+            {/* Hero Welcome Section */}
+            <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-blue-600 animate-pulse" />
+                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                    Welcome Back
+                  </span>
+                </div>
+                <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-blue-900 via-blue-600 to-blue-700 dark:from-blue-100 dark:via-blue-300 dark:to-blue-200 bg-clip-text text-transparent">
+                  Hello, {profile?.full_name?.split(" ")[0] || "there"}!
+                </h1>
+                <p className="text-lg text-slate-600 dark:text-slate-300 font-medium max-w-2xl">
+                  {insights?.motivationalMessage ||
+                    "Let's continue building your financial future together."}
+                </p>
+              </div>
+            </div>
 
-            <div className="mb-8 animate-fade-in">
-              <h2 className="text-3xl font-bold mb-3 mac-text-primary">
-                Welcome back, {profile?.full_name || "there"}! 👋
-              </h2>
+            {/* Key Metrics Grid - Premium Cards */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-in fade-in slide-in-from-top-6 duration-700">
+              {/* Wellness Score Card */}
+              <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 p-6 hover:shadow-xl transition-all duration-300 hover:border-blue-400 dark:hover:border-blue-600">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+                      Wellness Score
+                    </h3>
+                    <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                      {wellnessScore}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      out of 100
+                    </div>
+                    <Progress
+                      value={wellnessScore}
+                      className="h-2 bg-slate-200 dark:bg-slate-700 [&>div]:bg-gradient-to-r [&>div]:from-blue-600 [&>div]:to-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
 
-              <p className="text-lg font-semibold text-gray-500 italic leading-relaxed">
-                {insights?.motivationalMessage ||
-                  "Let's continue building your financial future together."}
-              </p>
+              {/* Learning Streak Card */}
+              <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 p-6 hover:shadow-xl transition-all duration-300 hover:border-purple-400 dark:hover:border-purple-600">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+                      Learning Streak
+                    </h3>
+                    <Flame className="w-5 h-5 text-orange-500 dark:text-orange-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-4xl font-bold text-orange-600 dark:text-orange-400">
+                      {streak?.current_streak || 0}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      Days • Best: {streak?.longest_streak || 0} days
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Goals Card */}
+              <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 p-6 hover:shadow-xl transition-all duration-300 hover:border-green-400 dark:hover:border-green-600">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+                      Active Goals
+                    </h3>
+                    <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-4xl font-bold text-green-600 dark:text-green-400">
+                      {goals.length}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      Goals in progress
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Today's Focus Card */}
+              <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 p-6 hover:shadow-xl transition-all duration-300 hover:border-indigo-400 dark:hover:border-indigo-600">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+                      Focus
+                    </h3>
+                    <Zap className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 line-clamp-2">
+                      {insights?.todaysFocus ||
+                        "Set your first financial goal to get started!"}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      Today's Priority
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Main Content Grid */}
-
-            <div className="grid lg:grid-cols-3 gap-6 mb-6">
-              {/* Left Column - Today's Focus, Learning Streak & Financial Wellness Score */}
-
-              <div className="lg:col-span-2 space-y-6">
-                <div className="grid md:grid-cols-3 gap-6">
-                  {/* Today's Focus */}
-
-                  <Card className="mac-card p-6 animate-fade-in">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <Target className="w-5 h-5 text-blue-600" />
+            <div className="grid lg:grid-cols-3 gap-6 mb-8">
+              {/* Left Column */}
+              <div className="lg:col-span-2 space-y-6 animate-in fade-in slide-in-from-left duration-700">
+                {/* Active Goals Section */}
+                <Card className="rounded-2xl border-slate-200 dark:border-slate-700 overflow-hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur border shadow-sm hover:shadow-md transition-all duration-300">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-600/10 dark:bg-blue-600/20 flex items-center justify-center">
+                          <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                          Your Goals
+                        </h2>
                       </div>
-
-                      <h3 className="text-lg font-semibold mac-text-primary">
-                        Today's Focus
-                      </h3>
-                    </div>
-
-                    <p className="text-base font-semibold text-gray-900 leading-relaxed">
-                      ✨{" "}
-                      {insights?.todaysFocus ||
-                        "Set your first financial goal to get started!"}
-                    </p>
-                  </Card>
-
-                  {/* Learning Streak */}
-
-                  <Card className="mac-card p-6 animate-fade-in">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                        <GraduationCap className="w-5 h-5 text-purple-600" />
-                      </div>
-
-                      <h3 className="text-lg font-semibold mac-text-primary">
-                        Learning Streak
-                      </h3>
-                    </div>
-
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold text-blue-600">
-                        {streak?.current_streak || 0}
-                      </span>
-
-                      <span className="mac-text-secondary">days</span>
-                    </div>
-
-                    <p className="text-sm mac-text-tertiary mt-1">
-                      Longest streak: {streak?.longest_streak || 0} days 🔥
-                    </p>
-                  </Card>
-
-                  {/* Financial Wellness Score - Compact, aligned with Learning Streak */}
-
-                  <Card className="mac-card p-6 animate-fade-in">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <Activity className="w-5 h-5 text-blue-600" />
-                      </div>
-
-                      <h3 className="text-lg font-semibold mac-text-primary">
-                        Wellness Score
-                      </h3>
-                    </div>
-
-                    <div className="flex items-center justify-center mb-3">
-                      <span className="text-3xl font-bold text-blue-600">
-                        {wellnessScore}/100
-                      </span>
-                    </div>
-
-                    <Progress
-                      value={wellnessScore}
-                      className={progressClassName}
-                    />
-                  </Card>
-                </div>
-
-                {/* Active Goals */}
-
-                <Card className="mac-card p-6 animate-fade-in">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold mac-text-primary">
-                      Your Goals
-                    </h3>
-
-                    <Button
-                      className="bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate.push("/goals")}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Goal
-                    </Button>
-                  </div>
-
-                  {goals.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Target className="w-12 h-12 mac-text-tertiary mx-auto mb-3" />
-
-                      <p className="mac-text-secondary mb-4">
-                        No active goals yet
-                      </p>
-
                       <Button
-                        variant="outline"
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-lg"
+                        size="sm"
                         onClick={() => navigate.push("/goals")}
                       >
-                        Create Your First Goal
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Goal
                       </Button>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {goals.map((goal) => {
-                        const targetAmount = Number(goal.target_amount || 0);
+                  </div>
 
-                        const currentAmount = Number(goal.current_amount);
+                  <div className="p-6">
+                    {goals.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+                          <Target className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-300 font-medium mb-4">
+                          No active goals yet
+                        </p>
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                          onClick={() => navigate.push("/goals")}
+                        >
+                          Create Your First Goal
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {goals.slice(0, 5).map((goal, index) => {
+                          const targetAmount = Number(goal.target_amount || 0);
+                          const currentAmount = Number(goal.current_amount);
+                          const progress =
+                            targetAmount > 0
+                              ? (currentAmount / targetAmount) * 100
+                              : 0;
 
-                        const progress =
-                          targetAmount > 0
-                            ? (currentAmount / targetAmount) * 100
-                            : 0;
+                          return (
+                            <div
+                              key={goal.id}
+                              className="group relative p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-900/50 hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-300 cursor-pointer"
+                              onClick={() => navigate.push("/goals")}
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 to-blue-600/0 group-hover:from-blue-600/5 group-hover:to-blue-600/0 rounded-xl transition-all duration-300" />
 
-                        return (
-                          <Card
-                            key={goal.id}
-                            className="p-4 mac-card transition-all cursor-pointer hover:shadow-lg"
-                            onClick={() => navigate.push("/goals")}
-                          >
-                            <div className="flex items-start gap-3 mb-3">
-                              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                                <Target className="w-5 h-5 text-blue-600" />
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="font-semibold mac-text-primary truncate">
-                                      {goal.title}
-                                    </h4>
-
-                                    <p className="text-sm mac-text-secondary capitalize">
-                                      {goal.category}
-                                    </p>
+                              <div className="relative space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex items-start gap-3 flex-1">
+                                    <div className="w-10 h-10 rounded-lg bg-blue-600/10 dark:bg-blue-600/20 flex items-center justify-center shrink-0 mt-0.5">
+                                      <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                        {goal.title}
+                                      </h4>
+                                      <p className="text-xs text-slate-500 dark:text-slate-400 capitalize mt-1">
+                                        {goal.category}
+                                      </p>
+                                    </div>
                                   </div>
-
-                                  <span className="text-sm font-semibold text-blue-600 shrink-0">
+                                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400 shrink-0">
                                     {progress.toFixed(0)}%
                                   </span>
                                 </div>
+
+                                <div className="space-y-2">
+                                  <Progress
+                                    value={progress}
+                                    className="h-2.5 bg-slate-200 dark:bg-slate-700 [&>div]:bg-gradient-to-r [&>div]:from-blue-600 [&>div]:to-blue-500 rounded-full"
+                                  />
+                                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                                    <span>
+                                      {profile?.currency || "USD"}{" "}
+                                      {currentAmount.toLocaleString()}
+                                    </span>
+                                    <span className="font-medium">
+                                      / {targetAmount.toLocaleString()}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-
-                            <Progress
-                              value={progress}
-                              className="h-2 mb-2 [&>div]:bg-blue-600"
-                            />
-
-                            <p className="text-sm mac-text-tertiary">
-                              {profile?.currency || "USD"}{" "}
-                              {currentAmount.toLocaleString()} /{" "}
-                              {targetAmount.toLocaleString()}
-                            </p>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  )}
+                          );
+                        })}
+                        {goals.length > 5 && (
+                          <div className="pt-2">
+                            <Button
+                              variant="ghost"
+                              className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 group"
+                              onClick={() => navigate.push("/goals")}
+                            >
+                              View All Goals ({goals.length})
+                              <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </Card>
 
-                {/* Next Milestone */}
-
-                <Card className="mac-card p-6 animate-fade-in">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                {/* Next Milestone Card */}
+                <Card className="rounded-2xl border-slate-200 dark:border-slate-700 overflow-hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur border shadow-sm hover:shadow-md transition-all duration-300">
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-amber-600/10 dark:bg-amber-600/20 flex items-center justify-center">
+                        <Award className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        Next Milestone
+                      </h2>
                     </div>
-
-                    <h3 className="text-lg font-semibold mac-text-primary">
-                      Next Milestone
-                    </h3>
                   </div>
 
-                  <p className="text-base font-semibold text-gray-900 mb-4 leading-relaxed">
-                    🎯{" "}
-                    {insights?.nextMilestone ||
-                      "Complete your onboarding to unlock personalized milestones!"}
-                  </p>
-
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => navigate.push("/milestones")}
-                  >
-                    View All Milestones
-                  </Button>
+                  <div className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1">
+                        <p className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                          🎯{" "}
+                          {insights?.nextMilestone ||
+                            "Complete your onboarding to unlock personalized milestones!"}
+                        </p>
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg w-full group"
+                          onClick={() => navigate.push("/milestones")}
+                        >
+                          View All Milestones
+                          <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </Card>
               </div>
 
               {/* Right Column - Financial News */}
-
-              <div className="lg:col-span-1 animate-fade-in">
-                <FinancialNews />
+              <div className="lg:col-span-1 animate-in fade-in slide-in-from-right duration-700">
+                <div className="sticky top-24">
+                  <FinancialNews />
+                </div>
               </div>
             </div>
-
-            {/* Quick Actions */}
-
-            <div className="fixed bottom-6 right-6 z-40">
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-full bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg hover:shadow-xl hover:bg-white"
-                onClick={() => navigate.push("/chat")}
-              >
-                <MessageCircle className="w-5 h-5 mr-2" />
-                Chat with Finley
-              </Button>
-            </div>
           </main>
+
+          {/* Floating Action Button */}
+          <div className="fixed bottom-6 right-6 z-40 group">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full blur-xl opacity-0 group-hover:opacity-75 transition-opacity duration-300 animate-pulse" />
+            <Button
+              size="lg"
+              className="relative rounded-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-2xl hover:shadow-2xl transition-all duration-300 group-hover:scale-110"
+              onClick={() => navigate.push("/chat")}
+            >
+              <MessageCircle className="w-5 h-5 mr-2" />
+              Chat with Finley
+            </Button>
+          </div>
         </div>
       )}
     </>
