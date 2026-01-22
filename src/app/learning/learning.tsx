@@ -137,8 +137,9 @@ const LearningCoach: React.FC = () => {
     }
   }, [conversations, messages.length, isLoading, setMessages]);
 
-  // Track when messages finish to detect courses
-  // IMPORTANT: Only check when streaming is complete to avoid parsing incomplete JSON
+  // Track processed message IDs to avoid redundant parsing and concurrent saves
+  const processedMessageIds = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     // Don't try to parse courses while streaming - wait for completion
     if (status === 'streaming' || status === 'submitted') {
@@ -146,25 +147,34 @@ const LearningCoach: React.FC = () => {
     }
 
     messages.forEach((message) => {
-      if (message.role === 'assistant' && message.id && !detectedCourses.has(message.id)) {
+      // Only process assistant messages with IDs that we haven't processed yet
+      if (
+        message.role === 'assistant' &&
+        message.id &&
+        !processedMessageIds.current.has(message.id) &&
+        !detectedCourses.has(message.id)
+      ) {
         // Extract text from message parts
         const messageText = message.parts
           .filter((part: any) => part.type === 'text')
           .map((part: any) => part.text)
           .join('');
 
-        if (messageText && messageText.length > 200) { // Only check if we have substantial content
-          // Only parse when streaming is complete
+        if (messageText && messageText.length > 200) {
           const course = parseCourseFromMessage(messageText);
           if (course) {
-            console.log('Course detected in useEffect for message', message.id, course.title);
+            console.log('Course detected for message', message.id, course.title);
+
+            // Mark as processed BEFORE mutation to avoid concurrent triggers
+            processedMessageIds.current.add(message.id);
+
             setDetectedCourses(prev => {
               const newMap = new Map(prev);
               newMap.set(message.id!, course);
               return newMap;
             });
 
-            // Auto-save the course (only once per message)
+            // Auto-save the course
             saveCourse.mutate(course, {
               onSuccess: (result) => {
                 console.log('Course saved with ID:', result?.id);
@@ -172,14 +182,14 @@ const LearningCoach: React.FC = () => {
               },
               onError: (error) => {
                 console.error('Error saving course:', error);
+                // If it failed, maybe we want to retry later, but for now we keep it in processed
               },
             });
           }
         }
       }
     });
-  }, [messages, status, detectedCourses, saveCourse]); // Add status to dependencies
-
+  }, [messages, status, detectedCourses, saveCourse]);
   // Track if we've loaded initial conversations
   const hasLoadedInitialConversations = React.useRef(false);
 
