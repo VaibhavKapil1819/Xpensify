@@ -47,7 +47,7 @@ import {
   MessageResponse,
 } from "@/components/ai-elements/message";
 import { Loader } from "@/components/ai-elements/loader";
-import { buttonClassName } from "@/models/constants";
+import { buttonClassName, progressClassName } from "@/models/constants";
 
 const LearningCoach: React.FC = () => {
   const { user } = useAuth();
@@ -56,7 +56,7 @@ const LearningCoach: React.FC = () => {
   const [showCourseLibrary, setShowCourseLibrary] = useState(false);
   // Track detected courses in messages for immediate UI updates
   const [detectedCourses, setDetectedCourses] = useState<Map<string, Course>>(
-    new Map()
+    new Map(),
   );
 
   const [input, setInput] = useState("");
@@ -101,7 +101,7 @@ const LearningCoach: React.FC = () => {
           "API Quota Exceeded: You've reached the daily limit. Please try again later.",
           {
             duration: 10000,
-          }
+          },
         );
       } else {
         toast.error("Failed to get response. Please try again.", {
@@ -159,8 +159,9 @@ const LearningCoach: React.FC = () => {
     }
   }, [conversations, messages.length, isLoading, setMessages]);
 
-  // Track when messages finish to detect courses
-  // IMPORTANT: Only check when streaming is complete to avoid parsing incomplete JSON
+  // Track processed message IDs to avoid redundant parsing and concurrent saves
+  const processedMessageIds = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     // Don't try to parse courses while streaming - wait for completion
     if (status === "streaming" || status === "submitted") {
@@ -168,9 +169,11 @@ const LearningCoach: React.FC = () => {
     }
 
     messages.forEach((message) => {
+      // Only process assistant messages with IDs that we haven't processed yet
       if (
         message.role === "assistant" &&
         message.id &&
+        !processedMessageIds.current.has(message.id) &&
         !detectedCourses.has(message.id)
       ) {
         // Extract text from message parts
@@ -180,22 +183,24 @@ const LearningCoach: React.FC = () => {
           .join("");
 
         if (messageText && messageText.length > 200) {
-          // Only check if we have substantial content
-          // Only parse when streaming is complete
           const course = parseCourseFromMessage(messageText);
           if (course) {
             console.log(
-              "Course detected in useEffect for message",
+              "Course detected for message",
               message.id,
-              course.title
+              course.title,
             );
+
+            // Mark as processed BEFORE mutation to avoid concurrent triggers
+            processedMessageIds.current.add(message.id);
+
             setDetectedCourses((prev) => {
               const newMap = new Map(prev);
               newMap.set(message.id!, course);
               return newMap;
             });
 
-            // Auto-save the course (only once per message)
+            // Auto-save the course
             saveCourse.mutate(course, {
               onSuccess: (result) => {
                 console.log("Course saved with ID:", result?.id);
@@ -203,14 +208,14 @@ const LearningCoach: React.FC = () => {
               },
               onError: (error) => {
                 console.error("Error saving course:", error);
+                // If it failed, maybe we want to retry later, but for now we keep it in processed
               },
             });
           }
         }
       }
     });
-  }, [messages, status, detectedCourses, saveCourse]); // Add status to dependencies
-
+  }, [messages, status, detectedCourses, saveCourse]);
   // Track if we've loaded initial conversations
   const hasLoadedInitialConversations = React.useRef(false);
 
@@ -227,7 +232,7 @@ const LearningCoach: React.FC = () => {
     try {
       // Try multiple patterns to find course JSON
       let courseJsonMatch = messageText.match(
-        /```course-json\s*([\s\S]*?)```/i
+        /```course-json\s*([\s\S]*?)```/i,
       );
 
       // If not found, try without the "course-json" label
@@ -310,7 +315,7 @@ const LearningCoach: React.FC = () => {
         // If code block isn't closed, JSON might be incomplete
         if (!hasClosingMarker && messageText.includes("```course-json")) {
           console.log(
-            "JSON code block appears incomplete - missing closing marker"
+            "JSON code block appears incomplete - missing closing marker",
           );
           return null;
         }
@@ -341,7 +346,7 @@ const LearningCoach: React.FC = () => {
         ) {
           console.error(
             "Invalid course structure: missing required fields",
-            courseData
+            courseData,
           );
           return null;
         }
@@ -350,7 +355,7 @@ const LearningCoach: React.FC = () => {
           (module: any) =>
             module.lessons &&
             Array.isArray(module.lessons) &&
-            module.lessons.length > 0
+            module.lessons.length > 0,
         );
 
         if (!hasLessons) {
@@ -369,12 +374,12 @@ const LearningCoach: React.FC = () => {
           /comprehensive course/i,
         ];
         const mentionsCourse = courseMentionPatterns.some((pattern) =>
-          pattern.test(messageText)
+          pattern.test(messageText),
         );
 
         if (mentionsCourse) {
           console.warn(
-            "⚠️ AI mentioned creating a course but course JSON not found in message. This may indicate the AI response was incomplete or the JSON format was incorrect."
+            "⚠️ AI mentioned creating a course but course JSON not found in message. This may indicate the AI response was incomplete or the JSON format was incorrect.",
           );
         } else {
           console.log("No course JSON found in message");
@@ -395,7 +400,7 @@ const LearningCoach: React.FC = () => {
         body: {
           isLearningCoach: true,
         },
-      }
+      },
     );
     setInput("");
   };
@@ -403,7 +408,7 @@ const LearningCoach: React.FC = () => {
   const handleClearHistory = () => {
     if (
       !confirm(
-        "Are you sure you want to clear your conversation history? This cannot be undone."
+        "Are you sure you want to clear your conversation history? This cannot be undone.",
       )
     ) {
       return;
@@ -590,14 +595,14 @@ const LearningCoach: React.FC = () => {
                         {/* Show active course button if there's a course in progress */}
                         {savedCourses.length > 0 &&
                           savedCourses.some(
-                            (c) => c.progress > 0 && !c.completed
+                            (c) => c.progress > 0 && !c.completed,
                           ) && (
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => {
                                 const activeCourse = savedCourses.find(
-                                  (c) => c.progress > 0 && !c.completed
+                                  (c) => c.progress > 0 && !c.completed,
                                 );
                                 if (activeCourse) {
                                   handleLoadCourse(activeCourse.id);
@@ -695,7 +700,7 @@ const LearningCoach: React.FC = () => {
                             } catch (error) {
                               console.error(
                                 "Error parsing course from message:",
-                                error
+                                error,
                               );
                             }
                           }
@@ -811,41 +816,41 @@ const LearningCoach: React.FC = () => {
                                                   c.title ===
                                                     parsedCourse!.title ||
                                                   c.title.toLowerCase() ===
-                                                    parsedCourse!.title.toLowerCase()
+                                                    parsedCourse!.title.toLowerCase(),
                                               );
 
                                             if (savedCourse) {
                                               console.log(
                                                 "Found saved course, loading:",
-                                                savedCourse.id
+                                                savedCourse.id,
                                               );
                                               handleLoadCourse(savedCourse.id);
                                             } else {
                                               console.log(
-                                                "Course not found in saved courses, saving now..."
+                                                "Course not found in saved courses, saving now...",
                                               );
                                               // Save it first, then load
                                               saveCourse.mutate(parsedCourse!, {
                                                 onSuccess: (result) => {
                                                   console.log(
                                                     "Course saved, loading:",
-                                                    result?.id
+                                                    result?.id,
                                                   );
                                                   if (result?.id) {
                                                     handleLoadCourse(result.id);
                                                   } else {
                                                     toast.error(
-                                                      "Course saved but ID not returned. Please check My Courses."
+                                                      "Course saved but ID not returned. Please check My Courses.",
                                                     );
                                                   }
                                                 },
                                                 onError: (error) => {
                                                   console.error(
                                                     "Error saving course:",
-                                                    error
+                                                    error,
                                                   );
                                                   toast.error(
-                                                    "Failed to save course. Please try again."
+                                                    "Failed to save course. Please try again.",
                                                   );
                                                 },
                                               });
@@ -1016,7 +1021,7 @@ const LearningCoach: React.FC = () => {
                                   body: {
                                     isLearningCoach: true,
                                   },
-                                }
+                                },
                               );
                             }}
                             className="w-full text-left p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -1070,7 +1075,7 @@ const WelcomeScreen: React.FC<{
     <div className="max-w-2xl mx-auto">
       <Card className="mac-card p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold mb-2 mac-text-primary">
@@ -1188,10 +1193,7 @@ const WelcomeScreen: React.FC<{
               >
                 Back
               </Button>
-              <Button
-                onClick={handleComplete}
-                className={`flex-1 ${buttonClassName}`}
-              >
+              <Button onClick={handleComplete} className="flex-1">
                 <BookOpen className="w-4 h-4 mr-2" />
                 Start Learning
               </Button>
@@ -1305,10 +1307,7 @@ const CourseLibrary: React.FC<CourseLibraryProps> = ({
                   {course.progress}%
                 </span>
               </div>
-              <Progress
-                value={course.progress}
-                className="h-2 [&>div]:bg-blue-600"
-              />
+              <Progress value={course.progress} className={progressClassName} />
             </div>
 
             <Button

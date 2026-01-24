@@ -7,16 +7,15 @@ import { useEffect, useRef, useState } from "react";
 // Reusable inline components as local functions
 const AnimatedBadge = ({ children }: { children: React.ReactNode }) => {
   const [isVisible, setIsVisible] = useState(false);
-  
+
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
   return (
-    <div 
-      className={`inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[hsl(var(--glass-bg))] backdrop-blur-xl border border-[hsl(var(--glass-border))] shadow-[var(--shadow-elegant)] transition-all duration-1000 ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}
+    <div
+      className={`inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[hsl(var(--glass-bg))] backdrop-blur-xl border border-[hsl(var(--glass-border))] shadow-[var(--shadow-elegant)] transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}
     >
       <Sparkles className="w-4 h-4 text-blue-600 animate-glow-pulse" />
       <span className="text-sm font-semibold tracking-wide text-foreground/90">{children}</span>
@@ -26,7 +25,7 @@ const AnimatedBadge = ({ children }: { children: React.ReactNode }) => {
 
 const GradientText = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
   const [isVisible, setIsVisible] = useState(false);
-  
+
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 300);
     return () => clearTimeout(timer);
@@ -34,9 +33,8 @@ const GradientText = ({ children, className = "" }: { children: React.ReactNode;
 
   return (
     <span
-      className={`gradient-text inline-block ${className} ${
-        isVisible ? 'animate-text-reveal' : 'opacity-0'
-      }`}
+      className={`gradient-text inline-block ${className} ${isVisible ? 'animate-text-reveal' : 'opacity-0'
+        }`}
     >
       {children}
     </span>
@@ -137,22 +135,22 @@ export default function Hero() {
       <div className="absolute inset-0 -z-10">
         {/* Artistic base gradient */}
         <div className="absolute inset-0 artistic-bg" />
-        
+
         {/* Animated gradient overlay */}
         <div className="absolute inset-0 artistic-overlay animate-gradient" />
-        
+
         {/* Pattern overlay */}
         <div className="absolute inset-0 pattern-dots opacity-30" />
-        
+
         {/* Glass morphism overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background/90" />
       </div>
 
-        {/* Enhanced Floating Blobs with better positioning - Blue */}
-        <FloatingBlob size="18rem" color="hsl(217,91%,60%,0.12)" top="8%" left="5%" delay="0s" blur="blur-[120px]" />
-        <FloatingBlob size="22rem" color="hsl(221,83%,53%,0.1)" bottom="10%" right="8%" delay="2s" blur="blur-[140px]" />
-        <FloatingBlob size="28rem" color="hsl(217,91%,60%,0.08)" top="45%" left="-10%" delay="4s" blur="blur-[160px]" />
-        <FloatingBlob size="16rem" color="hsl(217,91%,65%,0.08)" top="20%" right="15%" delay="1s" blur="blur-[100px]" />
+      {/* Enhanced Floating Blobs with better positioning - Blue */}
+      <FloatingBlob size="18rem" color="hsl(217,91%,60%,0.12)" top="8%" left="5%" delay="0s" blur="blur-[120px]" />
+      <FloatingBlob size="22rem" color="hsl(221,83%,53%,0.1)" bottom="10%" right="8%" delay="2s" blur="blur-[140px]" />
+      <FloatingBlob size="28rem" color="hsl(217,91%,60%,0.08)" top="45%" left="-10%" delay="4s" blur="blur-[160px]" />
+      <FloatingBlob size="16rem" color="hsl(217,91%,65%,0.08)" top="20%" right="15%" delay="1s" blur="blur-[100px]" />
 
       {/* Content with enhanced animations */}
       <div className="container mx-auto px-6 text-center max-w-5xl z-10">
@@ -191,7 +189,7 @@ export default function Hero() {
         <ScrollReveal delay={300}>
           <div className="flex flex-col sm:flex-row gap-5 justify-center items-center animate-fade-in-up" style={{ animationDelay: '500ms' }}>
             <Link href="/auth" className="w-full sm:w-auto group">
-              <ShineButton>Start Your Journey →</ShineButton>
+              <ShineButton>Start Your Journey </ShineButton>
             </Link>
             <a href="#features" className="w-full sm:w-auto">
               <button className="px-10 py-4 rounded-xl bg-[hsl(var(--glass-bg))] backdrop-blur-xl border border-[hsl(var(--glass-border))] text-foreground hover:bg-blue-600/15 hover:border-blue-600/50 transition-all duration-300 font-semibold text-base shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-elegant)]">
