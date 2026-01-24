@@ -20,6 +20,8 @@ import {
   X,
   Home,
   MessageSquare,
+  Loader2,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardNav from '@/components/DashboardNav';
@@ -45,8 +47,74 @@ export const CourseView: React.FC<CourseViewProps> = ({
   const [showExplanation, setShowExplanation] = useState<number | null>(null);
   const [userNotes, setUserNotes] = useState<Map<string, string>>(new Map());
   const [noteInput, setNoteInput] = useState('');
+  const [hintContent, setHintContent] = useState<string>('');
+  const [explanationContent, setExplanationContent] = useState<string>('');
+  const [loadingHint, setLoadingHint] = useState(false);
+  const [loadingExplanation, setLoadingExplanation] = useState(false);
+  const [showSavedNotes, setShowSavedNotes] = useState(false);
 
   const updateProgress = useUpdateCourseProgress();
+
+  // Fetch AI assistance using fetch API directly
+  const fetchAIAssistance = async (
+    lessonContent: string,
+    lessonTitle: string,
+    moduleTitle: string,
+    requestType: 'hint' | 'elaborate',
+    userNote?: string
+  ): Promise<string> => {
+    try {
+      const response = await fetch('/api/ai/lesson-assistance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lessonContent,
+          lessonTitle,
+          moduleTitle,
+          requestType,
+          userNote: userNote || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      // Handle text stream response (toTextStreamResponse format)
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let result = '';
+
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        // Text stream format: plain text chunks, no JSON wrapping
+        result += chunk;
+      }
+
+      const finalResult = result.trim();
+      if (!finalResult) {
+        console.warn('No content extracted from stream');
+      }
+      
+      return finalResult || 'No response received. Please try again.';
+    } catch (error: any) {
+      console.error('Error fetching AI assistance:', error);
+      if (error.message?.includes('quota') || error.message?.includes('429')) {
+        throw new Error('API quota exceeded. Please try again later.');
+      }
+      throw error;
+    }
+  };
 
   useEffect(() => {
     if (course && course.modules && Array.isArray(course.modules)) {
@@ -244,6 +312,76 @@ export const CourseView: React.FC<CourseViewProps> = ({
     setNoteInput(currentNote || '');
   }, [currentNote]);
 
+  // Reset hint/explanation when lesson changes
+  useEffect(() => {
+    setShowHint(false);
+    setShowExplanation(null);
+    setHintContent('');
+    setExplanationContent('');
+  }, [currentModuleIndex, currentLessonIndex]);
+
+  const handleGetHint = async () => {
+    if (!currentLesson || !currentModule) return;
+    
+    if (showHint && hintContent) {
+      setShowHint(false);
+      setHintContent('');
+      return;
+    }
+
+    setLoadingHint(true);
+    setShowHint(true);
+    setHintContent('');
+    
+    try {
+      const content = await fetchAIAssistance(
+        currentLesson.content,
+        currentLesson.title,
+        currentModule.title,
+        'hint',
+        noteInput || undefined
+      );
+      setHintContent(content);
+    } catch (error) {
+      console.error('Error requesting hint:', error);
+      toast.error('Failed to get hint. Please try again.');
+      setShowHint(false);
+    } finally {
+      setLoadingHint(false);
+    }
+  };
+
+  const handleGetExplanation = async () => {
+    if (!currentLesson || !currentModule) return;
+    
+    if (showExplanation === 0 && explanationContent) {
+      setShowExplanation(null);
+      setExplanationContent('');
+      return;
+    }
+
+    setLoadingExplanation(true);
+    setShowExplanation(0);
+    setExplanationContent('');
+    
+    try {
+      const content = await fetchAIAssistance(
+        currentLesson.content,
+        currentLesson.title,
+        currentModule.title,
+        'elaborate',
+        noteInput || undefined
+      );
+      setExplanationContent(content);
+    } catch (error) {
+      console.error('Error requesting explanation:', error);
+      toast.error('Failed to get explanation. Please try again.');
+      setShowExplanation(null);
+    } finally {
+      setLoadingExplanation(false);
+    }
+  };
+
   return (
     <div className="min-h-screen mac-bg h-screen flex flex-col overflow-hidden">
       <DashboardNav />
@@ -339,108 +477,118 @@ export const CourseView: React.FC<CourseViewProps> = ({
           </div>
         </aside>
 
-        {/* Focused Content Area */}
-        <main className="flex-1 overflow-y-auto bg-gray-50/20 dark:bg-gray-950/40 relative">
-          <div className="max-w-5xl mx-auto px-8 py-12 pb-40">
+        {/* Focused Content Area - Two Column Layout */}
+        <main className="flex-1 overflow-hidden bg-white dark:bg-gray-950 relative">
+          <div className="h-full flex">
             {!showQuiz ? (
               currentLesson && currentModule ? (
-                <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
-                  <LessonContent
-                    lesson={currentLesson}
-                    module={currentModule}
-                    showHint={showHint}
-                    onToggleHint={() => setShowHint(!showHint)}
-                    showExplanation={showExplanation}
-                    onToggleExplanation={(index) => setShowExplanation(showExplanation === index ? null : index)}
-                    noteInput={noteInput}
-                    onNoteInputChange={setNoteInput}
-                    onSaveNote={saveNote}
-                    lessonCompleted={lessonCompletionStatus}
-                  />
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  {/* Main Content Area - Left Column (70%) */}
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="h-full px-8 py-12">
+                      <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700">
+                        <LessonContent
+                          lesson={currentLesson}
+                          module={currentModule}
+                          showHint={showHint}
+                          hintContent={hintContent}
+                          loadingHint={loadingHint}
+                          onToggleHint={handleGetHint}
+                          showExplanation={showExplanation}
+                          explanationContent={explanationContent}
+                          loadingExplanation={loadingExplanation}
+                          onToggleExplanation={handleGetExplanation}
+                          noteInput={noteInput}
+                          onNoteInputChange={setNoteInput}
+                          onSaveNote={saveNote}
+                          lessonCompleted={lessonCompletionStatus}
+                          savedNotes={userNotes}
+                          currentNoteKey={`${currentModule.id}-${currentLesson.id}`}
+                          onToggleSavedNotes={() => setShowSavedNotes(!showSavedNotes)}
+                          showSavedNotes={showSavedNotes}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Lesson Navigation Footer */}
+                  <div className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-8 py-3">
+                    <div className="max-w-7xl mx-auto">
+                      <Card className="mac-card p-4 shadow-md bg-white dark:bg-gray-900 border border-gray-100 dark:border-white/5 flex flex-row items-center justify-between rounded-xl">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={goToPreviousLesson}
+                          disabled={currentModuleIndex === 0 && currentLessonIndex === 0}
+                          className="w-10 h-10 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 disabled:opacity-20 shrink-0"
+                        >
+                          <ArrowLeft className="w-4 h-4 text-gray-500" />
+                        </Button>
+
+                        <div className="flex flex-col items-center flex-1 mx-3 text-center shrink">
+                          <span className="text-[9px] uppercase tracking-wider font-semibold text-gray-400 leading-none">Module {currentModuleIndex + 1} • {currentLessonIndex + 1}/{currentModule.lessons.length}</span>
+                          <span className="text-xs font-semibold mac-text-primary line-clamp-1 max-w-[180px] md:max-w-[350px] mt-0.5">
+                            {currentLesson?.title || 'Loading...'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {!lessonCompletionStatus ? (
+                            <Button
+                              onClick={handleLessonComplete}
+                              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg shadow-md shadow-blue-500/20 active:scale-95 transition-all text-xs h-auto"
+                            >
+                              <span className="hidden sm:inline">Complete</span>
+                              <span className="sm:hidden">Done</span>
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={goToNextLesson}
+                              disabled={currentModuleIndex === courseState.modules.length - 1 && currentLessonIndex === currentModule.lessons.length - 1}
+                              className="bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-semibold px-5 py-2 rounded-lg shadow-md active:scale-95 transition-all text-xs h-auto"
+                            >
+                              <span>Next</span>
+                              <ChevronRight className="w-3.5 h-3.5 ml-1.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-                    <BookOpen className="w-8 h-8 text-gray-400" />
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                      <BookOpen className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-bold mac-text-primary mb-2">Content Unavailable</h3>
+                    <p className="mac-text-secondary max-w-xs mx-auto text-sm">
+                      The requested lesson content could not be found or is currently being loaded.
+                    </p>
                   </div>
-                  <h3 className="text-lg font-bold mac-text-primary mb-2">Content Unavailable</h3>
-                  <p className="mac-text-secondary max-w-xs mx-auto text-sm">
-                    The requested lesson content could not be found or is currently being loaded.
-                  </p>
                 </div>
               )
             ) : (
-              currentModule?.quiz ? (
-                <div className="animate-in zoom-in-95 fade-in duration-500 max-w-2xl mx-auto">
-                  <InteractiveQuizView
-                    quiz={currentModule.quiz}
-                    onComplete={handleQuizComplete}
-                    onBack={() => setShowQuiz(false)}
-                  />
+              <div className="flex-1 overflow-y-auto">
+                <div className="max-w-4xl mx-auto px-8 py-12">
+                  {currentModule?.quiz ? (
+                    <div className="animate-in zoom-in-95 fade-in duration-500">
+                      <InteractiveQuizView
+                        quiz={currentModule.quiz}
+                        onComplete={handleQuizComplete}
+                        onBack={() => setShowQuiz(false)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-center py-20">
+                      <p className="mac-text-secondary font-bold">Quiz not available for this module.</p>
+                      <Button onClick={() => setShowQuiz(false)} className="mt-4">Back to Lesson</Button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="text-center py-20">
-                  <p className="mac-text-secondary font-bold">Quiz not available for this module.</p>
-                  <Button onClick={() => setShowQuiz(false)} className="mt-4">Back to Lesson</Button>
-                </div>
-              )
+              </div>
             )}
-            {/* Lesson Navigation Footer - Static position at the end of content */}
-            <div className="mt-20 w-full max-w-3xl mx-auto">
-              <Card className="mac-card p-6 shadow-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-white/5 flex flex-row items-center justify-between rounded-[2rem] min-h-[100px]">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={goToPreviousLesson}
-                  disabled={currentModuleIndex === 0 && currentLessonIndex === 0}
-                  className="w-14 h-14 rounded-2xl hover:bg-gray-100 dark:hover:bg-white/5 disabled:opacity-20 shrink-0"
-                >
-                  <ArrowLeft className="w-6 h-6 text-gray-500" />
-                </Button>
-
-                <div className="flex flex-col items-center flex-1 mx-4 text-center shrink">
-                  <span className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-400 mb-2 leading-none">Module {currentModuleIndex + 1} • {currentLessonIndex + 1}/{currentModule.lessons.length}</span>
-                  <span className="text-sm font-black mac-text-primary line-clamp-1 max-w-[150px] md:max-w-[400px]">
-                    {showQuiz ? 'Assessment' : currentLesson?.title || 'Loading...'}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0">
-                  {!showQuiz && (
-                    <>
-                      {!lessonCompletionStatus ? (
-                        <Button
-                          onClick={handleLessonComplete}
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-black px-6 md:px-10 py-4 md:py-6 rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all text-sm h-auto"
-                        >
-                          <span className="hidden sm:inline">Complete Lesson</span>
-                          <span className="sm:hidden">Done</span>
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={goToNextLesson}
-                          disabled={currentModuleIndex === courseState.modules.length - 1 && currentLessonIndex === currentModule.lessons.length - 1}
-                          className="bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-black px-6 md:px-10 py-4 md:py-6 rounded-2xl shadow-xl active:scale-95 transition-all text-sm h-auto"
-                        >
-                          <span>Continue</span>
-                          <ChevronRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      )}
-                    </>
-                  )}
-                  {showQuiz && (
-                    <Button
-                      onClick={() => setShowQuiz(false)}
-                      variant="outline"
-                      className="rounded-2xl border-2 px-6 md:px-10 py-4 md:py-6 font-bold h-auto"
-                    >
-                      <span className="hidden sm:inline">Finish Review</span>
-                      <span className="sm:hidden">Exit</span>
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            </div>
           </div>
         </main>
       </div>
@@ -452,153 +600,273 @@ const LessonContent: React.FC<{
   lesson: Lesson;
   module: CourseModule;
   showHint: boolean;
+  hintContent: string;
+  loadingHint: boolean;
   onToggleHint: () => void;
   showExplanation: number | null;
-  onToggleExplanation: (index: number) => void;
+  explanationContent: string;
+  loadingExplanation: boolean;
+  onToggleExplanation: () => void;
   noteInput: string;
   onNoteInputChange: (value: string) => void;
   onSaveNote: () => void;
   lessonCompleted: boolean;
+  savedNotes: Map<string, string>;
+  currentNoteKey: string;
+  onToggleSavedNotes: () => void;
+  showSavedNotes: boolean;
 }> = ({
   lesson,
   module,
   showHint,
+  hintContent,
+  loadingHint,
   onToggleHint,
   showExplanation,
+  explanationContent,
+  loadingExplanation,
   onToggleExplanation,
   noteInput,
   onNoteInputChange,
   onSaveNote,
   lessonCompleted,
+  savedNotes,
+  currentNoteKey,
+  onToggleSavedNotes,
+  showSavedNotes,
 }) => {
     return (
-      <div className="space-y-12">
-        {/* Header with high typography */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Badge className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-none font-bold uppercase tracking-widest text-[9px] px-2 py-1">
-              {module.title}
-            </Badge>
-            {lesson.duration && (
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400">
-                <Clock className="w-3.5 h-3.5" />
-                {lesson.duration}
-              </div>
-            )}
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Main Content Area - Left Column (70%) */}
+        <div className="flex-1 lg:flex-[0.7] space-y-8">
+          {/* Header Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Badge className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-none font-semibold uppercase tracking-wider text-xs px-3 py-1">
+                {module.title}
+              </Badge>
+              {lesson.duration && (
+                <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-medium">{lesson.duration}</span>
+                </div>
+              )}
+            </div>
+            <h1 className="text-3xl font-bold mac-text-primary tracking-tight leading-tight">
+              {lesson.title}
+            </h1>
           </div>
-          <h2 className="text-4xl font-extrabold mac-text-primary tracking-tight leading-tight">{lesson.title}</h2>
+
+          {/* Main Content Card */}
+          <Card className="p-8 mac-card border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-gray-900 rounded-2xl">
+            <div className="prose dark:prose-invert max-w-none">
+              <div className="whitespace-pre-wrap text-base text-gray-700 dark:text-gray-300 leading-relaxed">
+                {lesson.content}
+              </div>
+            </div>
+          </Card>
+
+          {/* Interactive Examples */}
+          {lesson.examples && lesson.examples.length > 0 && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-6 bg-blue-600 rounded-full" />
+                <h3 className="text-lg font-semibold mac-text-primary uppercase tracking-wide text-sm">
+                  Deep Dive Examples
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {lesson.examples.map((example, index) => (
+                  <Card key={index} className="p-6 mac-card border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/5 rounded-xl hover:shadow-md transition-shadow">
+                    <h4 className="text-base font-semibold mac-text-primary mb-2 flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-xs font-bold shadow-sm">
+                        {index + 1}
+                      </div>
+                      {example.title}
+                    </h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
+                      {example.description}
+                    </p>
+                    {example.scenario && (
+                      <div className="p-3 bg-white dark:bg-gray-800 rounded-lg text-sm text-blue-600 dark:text-blue-400 italic border border-blue-100 dark:border-blue-900/30">
+                        "{example.scenario}"
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="grid lg:grid-cols-4 gap-12">
-          <div className="lg:col-span-3">
-            <Card className="p-10 mac-card border-none shadow-2xl bg-white dark:bg-gray-900 rounded-[2.5rem] relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-32 -mt-32" />
-              <div className="prose dark:prose-invert max-w-none relative z-10">
-                <div className="whitespace-pre-wrap text-xl text-gray-700 dark:text-gray-300 font-medium leading-[1.8] tracking-tight">
-                  {lesson.content}
-                </div>
-              </div>
-            </Card>
-
-            {/* Interactive Examples */}
-            {lesson.examples && lesson.examples.length > 0 && (
-              <div className="mt-16 space-y-8">
-                <div className="flex items-center gap-3">
-                  <div className="w-1 bg-blue-600 h-6 rounded-full" />
-                  <h3 className="text-xl font-black mac-text-primary uppercase tracking-widest text-sm">Deep Dive Examples</h3>
-                </div>
-                <div className="grid gap-6">
-                  {lesson.examples.map((example, index) => (
-                    <Card key={index} className="p-8 mac-card-flat bg-gray-50 dark:bg-white/5 border-none rounded-3xl group hover:shadow-xl transition-all">
-                      <h4 className="text-lg font-bold mac-text-primary mb-3 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center text-sm shadow-sm">0{index + 1}</div>
-                        {example.title}
-                      </h4>
-                      <p className="text-gray-600 dark:text-gray-400 font-medium leading-relaxed mb-4">{example.description}</p>
-                      {example.scenario && (
-                        <div className="p-4 bg-white/80 dark:bg-gray-800/80 rounded-2xl text-[13px] font-bold text-blue-600 italic border border-blue-50 dark:border-blue-900/20">
-                          " {example.scenario} "
-                        </div>
-                      )}
-                    </Card>
+        {/* Right Sidebar (30%) - Sticky */}
+        <div className="w-full lg:w-auto lg:flex-[0.3]">
+          <div className="sticky top-6 space-y-6">
+          {/* YOUR NOTE Section */}
+          <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-md rounded-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-xs uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">
+                YOUR NOTE
+              </h4>
+              {savedNotes.size > 0 && (
+                <button
+                  onClick={onToggleSavedNotes}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                >
+                  <FileText className="w-3 h-3" />
+                  {savedNotes.size} saved
+                </button>
+              )}
+            </div>
+            <textarea
+              value={noteInput}
+              onChange={(e) => onNoteInputChange(e.target.value)}
+              placeholder="Write your observation..."
+              className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[140px] mb-4"
+            />
+            <Button 
+              onClick={onSaveNote} 
+              disabled={!noteInput.trim()} 
+              className="w-full h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Save Note
+            </Button>
+            
+            {/* Saved Notes Display */}
+            {showSavedNotes && savedNotes.size > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h5 className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  Saved Notes ({savedNotes.size})
+                </h5>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {Array.from(savedNotes.entries()).map(([key, note]) => (
+                    <div
+                      key={key}
+                      className={`p-2 rounded-lg text-xs bg-gray-50 dark:bg-white/5 border ${
+                        key === currentNoteKey
+                          ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
+                      <p className="text-gray-700 dark:text-gray-300 line-clamp-3">
+                        {note}
+                      </p>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
+          </Card>
 
-          {/* Floating AI Panel */}
-          <div className="lg:col-span-1 space-y-8 flex flex-col">
-            <Card className="p-6 bg-white dark:bg-gray-900 border-none shadow-xl rounded-[2rem] border border-gray-100 dark:border-white/5">
-              <h4 className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-400 mb-4">Your Note</h4>
-              <textarea
-                value={noteInput}
-                onChange={(e) => onNoteInputChange(e.target.value)}
-                placeholder="Write your observation..."
-                className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl p-4 text-sm font-medium focus:ring-2 ring-blue-500 min-h-[120px] mb-4"
-              />
-              <Button onClick={onSaveNote} disabled={!noteInput.trim()} className="w-full h-12 rounded-2xl bg-blue-600 font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
-                Save Note
-              </Button>
-            </Card>
+          {/* AI TUTOR Section */}
+          <Card className="p-6 bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-950 dark:to-gray-900 border-none shadow-xl rounded-xl text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-24 h-24 opacity-5">
+              <Sparkles className="w-full h-full" />
+            </div>
 
-            <Card className="p-6 lg:sticky lg:top-24 bg-gradient-to-br from-gray-900 to-black dark:from-indigo-950 dark:to-blue-950 border-none rounded-[2rem] shadow-2xl text-white overflow-hidden z-20">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Sparkles className="w-16 h-16" />
-              </div>
-
-              <div className="flex items-center gap-3 mb-6 relative z-10">
-                <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
                   <Sparkles className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-black uppercase tracking-widest leading-none mb-1">AI Tutor</h4>
+                  <h4 className="text-sm font-bold uppercase tracking-wider leading-none mb-1">
+                    AI TUTOR
+                  </h4>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[9px] font-bold text-emerald-400 uppercase">Live Assistance</span>
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[10px] font-semibold text-emerald-400 uppercase">
+                      LIVE ASSISTANCE
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <p className="text-xs text-blue-100/70 font-bold leading-relaxed mb-8 relative z-10">
+              <p className="text-xs text-gray-300 leading-relaxed mb-6">
                 Get an instant perspective or a quick hint to clarify any confusion.
               </p>
 
-              <div className="space-y-3 relative z-10">
+              <div className="space-y-3">
                 <Button
                   variant="ghost"
                   onClick={onToggleHint}
-                  className={`w-full justify-start text-xs font-black h-14 rounded-2xl border-2 transition-all ${showHint
-                    ? 'bg-yellow-400 text-black border-yellow-400 hover:bg-yellow-400'
-                    : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
-                    }`}
+                  disabled={loadingHint}
+                  className={`w-full justify-start text-xs font-bold h-12 rounded-lg border-2 transition-all ${
+                    showHint
+                      ? 'bg-yellow-400 text-black border-yellow-400 hover:bg-yellow-400'
+                      : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                  } disabled:opacity-50`}
                 >
-                  <Lightbulb className="w-4 h-4 mr-3" />
-                  GET A HINT
+                  {loadingHint ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Lightbulb className="w-4 h-4 mr-2" />
+                      GET A HINT
+                    </>
+                  )}
                 </Button>
 
                 <Button
                   variant="ghost"
-                  onClick={() => onToggleExplanation(0)}
-                  className={`w-full justify-start text-xs font-black h-14 rounded-2xl border-2 transition-all ${showExplanation === 0
-                    ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-500'
-                    : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
-                    }`}
+                  onClick={onToggleExplanation}
+                  disabled={loadingExplanation}
+                  className={`w-full justify-start text-xs font-bold h-12 rounded-lg border-2 transition-all ${
+                    showExplanation === 0
+                      ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-500'
+                      : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                  } disabled:opacity-50`}
                 >
-                  <HelpCircle className="w-4 h-4 mr-3" />
-                  ELABORATE
+                  {loadingExplanation ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <HelpCircle className="w-4 h-4 mr-2" />
+                      ELABORATE
+                    </>
+                  )}
                 </Button>
               </div>
 
-              {(showHint || showExplanation === 0) && (
-                <div className="mt-8 p-6 rounded-3xl bg-white text-gray-900 animate-in slide-in-from-top-4 duration-500 shadow-2xl">
-                  <p className="text-xs font-bold leading-relaxed">
-                    {showHint ? "Look at how the variables interact when one value changes drastically. It reveals the core principle."
-                      : "Think of this like a leverage system. A small input here creates a significant result there because of the structure we've discussed."}
-                  </p>
+              {showHint && (
+                <div className="mt-6 p-4 rounded-lg bg-white text-gray-900 animate-in slide-in-from-top-4 duration-300 shadow-lg">
+                  {loadingHint ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-yellow-500" />
+                      <p className="text-xs text-gray-600">Getting your hint...</p>
+                    </div>
+                  ) : hintContent ? (
+                    <div className="flex items-start gap-2">
+                      <Lightbulb className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
+                      <p className="text-xs font-medium leading-relaxed">{hintContent}</p>
+                    </div>
+                  ) : null}
                 </div>
               )}
-            </Card>
+
+              {showExplanation === 0 && (
+                <div className="mt-6 p-4 rounded-lg bg-white text-gray-900 animate-in slide-in-from-top-4 duration-300 shadow-lg">
+                  {loadingExplanation ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                      <p className="text-xs text-gray-600">Getting explanation...</p>
+                    </div>
+                  ) : explanationContent ? (
+                    <div className="flex items-start gap-2">
+                      <HelpCircle className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                      <p className="text-xs font-medium leading-relaxed">{explanationContent}</p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </Card>
           </div>
         </div>
       </div>

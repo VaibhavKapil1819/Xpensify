@@ -18,7 +18,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import DashboardNav from "@/components/DashboardNav";
 import { DashboardSkeleton } from "@/components/DashboardSkeletons";
 import FinancialNews from "@/components/FinancialNews";
@@ -143,6 +145,7 @@ export default function Dashboard() {
   const [insights, setInsights] = useState<InsightsType | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const [focusExpanded, setFocusExpanded] = useState(false);
 
   // Track whether we need to cache data (true when fetching fresh data)
 
@@ -378,10 +381,25 @@ export default function Dashboard() {
                     <Zap className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div className="space-y-2">
-                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 line-clamp-2">
-                      {insights?.todaysFocus ||
-                        "Set your first financial goal to get started!"}
-                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={cn(
+                              "text-sm font-semibold text-slate-900 dark:text-slate-100 leading-relaxed cursor-pointer transition-all duration-300",
+                              !focusExpanded && "line-clamp-3"
+                            )}
+                            onClick={() => setFocusExpanded(!focusExpanded)}
+                          >
+                            {insights?.todaysFocus ||
+                              "Set your first financial goal to get started!"}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[300px] p-3 text-sm">
+                          {focusExpanded ? "Click to collapse" : "Click to expand / Hover for detail"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <div className="text-xs text-slate-500 dark:text-slate-400">
                       Today's Priority
                     </div>
