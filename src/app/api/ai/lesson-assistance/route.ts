@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    
+
     // Extract from body (useChat sends data in body, not in messages)
     const lessonContent = body.lessonContent;
     const lessonTitle = body.lessonTitle;
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     if (!lessonContent || !requestType) {
       return NextResponse.json(
         { error: "Lesson content and request type are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     let systemPrompt = `You are an expert financial education tutor helping a student understand a lesson. Be concise, clear, and helpful.`;
 
     let userPrompt = "";
-    
+
     if (requestType === "hint") {
       userPrompt = `The student is learning about: "${lessonTitle}" in the module "${moduleTitle}".
 
@@ -56,7 +56,7 @@ Provide a more detailed explanation that expands on the lesson content. Use exam
     } else {
       return NextResponse.json(
         { error: "Invalid request type. Must be 'hint' or 'elaborate'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -74,7 +74,7 @@ Provide a more detailed explanation that expands on the lesson content. Use exam
         },
       ],
       temperature: 0.7,
-      maxTokens: 300, // Keep responses concise
+      maxOutputTokens: 300,
     });
 
     // Use toTextStreamResponse for simpler text-only streaming
@@ -97,13 +97,13 @@ Provide a more detailed explanation that expands on the lesson content. Use exam
           message:
             "You've reached the daily limit for AI requests. Please try again later.",
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
     return NextResponse.json(
       { error: "Something went wrong", message: errorMessage },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

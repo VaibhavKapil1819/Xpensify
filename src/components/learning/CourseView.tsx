@@ -1,10 +1,10 @@
-'use client'
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
+"use client";
+import React, { useState, useEffect, useMemo } from "react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import {
   BookOpen,
   Clock,
@@ -22,11 +22,18 @@ import {
   MessageSquare,
   Loader2,
   FileText,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import DashboardNav from '@/components/DashboardNav';
-import { useUpdateCourseProgress } from '@/hooks/use-learning';
-import type { Course, Module as CourseModule, Lesson, Quiz, Question } from '@/types/course';
+} from "lucide-react";
+import { toast } from "sonner";
+import DashboardNav from "@/components/DashboardNav";
+import { useUpdateCourseProgress } from "@/hooks/use-learning";
+import type {
+  Course,
+  Module as CourseModule,
+  Lesson,
+  Quiz,
+  Question,
+} from "@/types/course";
+import { buttonClassName, progressClassName } from "@/models/constants";
 
 interface CourseViewProps {
   course: Course;
@@ -46,9 +53,9 @@ export const CourseView: React.FC<CourseViewProps> = ({
   const [showHint, setShowHint] = useState(false);
   const [showExplanation, setShowExplanation] = useState<number | null>(null);
   const [userNotes, setUserNotes] = useState<Map<string, string>>(new Map());
-  const [noteInput, setNoteInput] = useState('');
-  const [hintContent, setHintContent] = useState<string>('');
-  const [explanationContent, setExplanationContent] = useState<string>('');
+  const [noteInput, setNoteInput] = useState("");
+  const [hintContent, setHintContent] = useState<string>("");
+  const [explanationContent, setExplanationContent] = useState<string>("");
   const [loadingHint, setLoadingHint] = useState(false);
   const [loadingExplanation, setLoadingExplanation] = useState(false);
   const [showSavedNotes, setShowSavedNotes] = useState(false);
@@ -60,14 +67,14 @@ export const CourseView: React.FC<CourseViewProps> = ({
     lessonContent: string,
     lessonTitle: string,
     moduleTitle: string,
-    requestType: 'hint' | 'elaborate',
-    userNote?: string
+    requestType: "hint" | "elaborate",
+    userNote?: string,
   ): Promise<string> => {
     try {
-      const response = await fetch('/api/ai/lesson-assistance', {
-        method: 'POST',
+      const response = await fetch("/api/ai/lesson-assistance", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           lessonContent,
@@ -80,16 +87,18 @@ export const CourseView: React.FC<CourseViewProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`,
+        );
       }
 
       // Handle text stream response (toTextStreamResponse format)
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      let result = '';
+      let result = "";
 
       if (!reader) {
-        throw new Error('No response body');
+        throw new Error("No response body");
       }
 
       while (true) {
@@ -103,14 +112,14 @@ export const CourseView: React.FC<CourseViewProps> = ({
 
       const finalResult = result.trim();
       if (!finalResult) {
-        console.warn('No content extracted from stream');
+        console.warn("No content extracted from stream");
       }
-      
-      return finalResult || 'No response received. Please try again.';
+
+      return finalResult || "No response received. Please try again.";
     } catch (error: any) {
-      console.error('Error fetching AI assistance:', error);
-      if (error.message?.includes('quota') || error.message?.includes('429')) {
-        throw new Error('API quota exceeded. Please try again later.');
+      console.error("Error fetching AI assistance:", error);
+      if (error.message?.includes("quota") || error.message?.includes("429")) {
+        throw new Error("API quota exceeded. Please try again later.");
       }
       throw error;
     }
@@ -120,8 +129,8 @@ export const CourseView: React.FC<CourseViewProps> = ({
     if (course && course.modules && Array.isArray(course.modules)) {
       setCourseState(course);
       const notesMap = new Map<string, string>();
-      course.modules.forEach(module => {
-        module.lessons.forEach(lesson => {
+      course.modules.forEach((module) => {
+        module.lessons.forEach((lesson) => {
           if ((lesson as any).note) {
             const noteKey = `${module.id}-${lesson.id}`;
             notesMap.set(noteKey, (lesson as any).note);
@@ -130,11 +139,14 @@ export const CourseView: React.FC<CourseViewProps> = ({
       });
       setUserNotes(notesMap);
 
-      const firstIncompleteModule = course.modules.find(mod =>
-        !mod.locked && mod.lessons.some(lesson => !lesson.completed)
+      const firstIncompleteModule = course.modules.find(
+        (mod) => !mod.locked && mod.lessons.some((lesson) => !lesson.completed),
       );
       if (firstIncompleteModule) {
-        const firstIncompleteLessonIndex = firstIncompleteModule.lessons.findIndex(lesson => !lesson.completed);
+        const firstIncompleteLessonIndex =
+          firstIncompleteModule.lessons.findIndex(
+            (lesson) => !lesson.completed,
+          );
         if (firstIncompleteLessonIndex >= 0) {
           const moduleIndex = course.modules.indexOf(firstIncompleteModule);
           setCurrentModuleIndex(moduleIndex);
@@ -144,13 +156,23 @@ export const CourseView: React.FC<CourseViewProps> = ({
     }
   }, [course]);
 
-  if (!courseState || !courseState.modules || courseState.modules.length === 0) {
+  if (
+    !courseState ||
+    !courseState.modules ||
+    courseState.modules.length === 0
+  ) {
     return (
       <div className="min-h-screen mac-bg flex items-center justify-center">
         <Card className="mac-card p-8 max-w-md text-center">
-          <h2 className="text-xl font-semibold mb-4 mac-text-primary">Course Data Error</h2>
-          <p className="mac-text-secondary mb-4">The course data is invalid or incomplete.</p>
-          <Button onClick={onBack} variant="outline">Back to Chat</Button>
+          <h2 className="text-xl font-semibold mb-4 mac-text-primary">
+            Course Data Error
+          </h2>
+          <p className="mac-text-secondary mb-4">
+            The course data is invalid or incomplete.
+          </p>
+          <Button onClick={onBack} variant="outline">
+            Back to Chat
+          </Button>
         </Card>
       </div>
     );
@@ -161,17 +183,25 @@ export const CourseView: React.FC<CourseViewProps> = ({
   const lessonCompletionStatus = currentLesson?.completed || false;
 
   const calculateProgress = (course: Course): number => {
-    const totalLessons = course.modules.reduce((acc, mod) => acc + mod.lessons.length, 0);
-    const completedLessons = course.modules.reduce(
-      (acc, mod) => acc + mod.lessons.filter(l => l.completed).length,
-      0
+    const totalLessons = course.modules.reduce(
+      (acc, mod) => acc + mod.lessons.length,
+      0,
     );
-    return totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const completedLessons = course.modules.reduce(
+      (acc, mod) => acc + mod.lessons.filter((l) => l.completed).length,
+      0,
+    );
+    return totalLessons > 0
+      ? Math.round((completedLessons / totalLessons) * 100)
+      : 0;
   };
 
   const overallProgress = calculateProgress(courseState);
 
-  const saveProgress = async (updatedCourse: Course, includeCourseData = false) => {
+  const saveProgress = async (
+    updatedCourse: Course,
+    includeCourseData = false,
+  ) => {
     const progress = calculateProgress(updatedCourse);
     try {
       await updateProgress.mutateAsync({
@@ -180,8 +210,8 @@ export const CourseView: React.FC<CourseViewProps> = ({
         courseData: includeCourseData ? updatedCourse : undefined,
       });
     } catch (error) {
-      console.error('Error saving progress:', error);
-      toast.error('Failed to save progress.');
+      console.error("Error saving progress:", error);
+      toast.error("Failed to save progress.");
     }
   };
 
@@ -221,7 +251,8 @@ export const CourseView: React.FC<CourseViewProps> = ({
           return {
             ...module,
             lessons: module.lessons.map((lesson, lesIdx) => {
-              if (lesIdx === currentLessonIndex) return { ...lesson, completed: true };
+              if (lesIdx === currentLessonIndex)
+                return { ...lesson, completed: true };
               return lesson;
             }),
           };
@@ -233,7 +264,7 @@ export const CourseView: React.FC<CourseViewProps> = ({
     setCourseState(updatedCourse);
     try {
       await saveProgress(updatedCourse, true);
-      toast.success('Lesson completed! ✅');
+      toast.success("Lesson completed! ✅");
       setTimeout(() => goToNextLesson(), 500);
     } catch (error) {
       setCourseState(courseState);
@@ -245,19 +276,26 @@ export const CourseView: React.FC<CourseViewProps> = ({
       ...courseState,
       modules: courseState.modules.map((module, modIdx) =>
         modIdx === currentModuleIndex && module.quiz
-          ? { ...module, quiz: { ...module.quiz, completed: true, score }, completed: true }
-          : module
+          ? {
+              ...module,
+              quiz: { ...module.quiz, completed: true, score },
+              completed: true,
+            }
+          : module,
       ),
     };
 
-    const shouldUnlockNext = score >= (currentModule.quiz?.passingScore || 70) &&
+    const shouldUnlockNext =
+      score >= (currentModule.quiz?.passingScore || 70) &&
       currentModuleIndex < courseState.modules.length - 1;
 
     if (shouldUnlockNext) {
       const updatedCourseUnlocked: Course = {
         ...updatedCourse,
         modules: updatedCourse.modules.map((module, modIdx) =>
-          modIdx === currentModuleIndex + 1 ? { ...module, locked: false } : module
+          modIdx === currentModuleIndex + 1
+            ? { ...module, locked: false }
+            : module,
         ),
       };
       setCourseState(updatedCourseUnlocked);
@@ -266,7 +304,8 @@ export const CourseView: React.FC<CourseViewProps> = ({
     } else {
       setCourseState(updatedCourse);
       saveProgress(updatedCourse, true);
-      if (score >= (currentModule.quiz?.passingScore || 70)) toast.success(`Passed with ${score}%!`);
+      if (score >= (currentModule.quiz?.passingScore || 70))
+        toast.success(`Passed with ${score}%!`);
       else toast.info(`You scored ${score}%. Try again!`);
     }
     setShowQuiz(false);
@@ -286,7 +325,8 @@ export const CourseView: React.FC<CourseViewProps> = ({
           return {
             ...module,
             lessons: module.lessons.map((lesson, lesIdx) => {
-              if (lesIdx === currentLessonIndex) return { ...lesson, note: noteInput };
+              if (lesIdx === currentLessonIndex)
+                return { ...lesson, note: noteInput };
               return lesson;
             }),
           };
@@ -297,54 +337,54 @@ export const CourseView: React.FC<CourseViewProps> = ({
 
     setCourseState(updatedCourse);
     await saveProgress(updatedCourse, true);
-    setNoteInput('');
-    toast.success('Note saved! 📝');
+    setNoteInput("");
+    toast.success("Note saved! 📝");
   };
 
   const currentNote = useMemo(() => {
-    if (!currentLesson) return '';
+    if (!currentLesson) return "";
     if (currentLesson.note) return currentLesson.note;
     const noteKey = `${currentModule.id}-${currentLesson.id}`;
-    return userNotes.get(noteKey) || '';
+    return userNotes.get(noteKey) || "";
   }, [currentModule, currentLesson, userNotes]);
 
   useEffect(() => {
-    setNoteInput(currentNote || '');
+    setNoteInput(currentNote || "");
   }, [currentNote]);
 
   // Reset hint/explanation when lesson changes
   useEffect(() => {
     setShowHint(false);
     setShowExplanation(null);
-    setHintContent('');
-    setExplanationContent('');
+    setHintContent("");
+    setExplanationContent("");
   }, [currentModuleIndex, currentLessonIndex]);
 
   const handleGetHint = async () => {
     if (!currentLesson || !currentModule) return;
-    
+
     if (showHint && hintContent) {
       setShowHint(false);
-      setHintContent('');
+      setHintContent("");
       return;
     }
 
     setLoadingHint(true);
     setShowHint(true);
-    setHintContent('');
-    
+    setHintContent("");
+
     try {
       const content = await fetchAIAssistance(
         currentLesson.content,
         currentLesson.title,
         currentModule.title,
-        'hint',
-        noteInput || undefined
+        "hint",
+        noteInput || undefined,
       );
       setHintContent(content);
     } catch (error) {
-      console.error('Error requesting hint:', error);
-      toast.error('Failed to get hint. Please try again.');
+      console.error("Error requesting hint:", error);
+      toast.error("Failed to get hint. Please try again.");
       setShowHint(false);
     } finally {
       setLoadingHint(false);
@@ -353,29 +393,29 @@ export const CourseView: React.FC<CourseViewProps> = ({
 
   const handleGetExplanation = async () => {
     if (!currentLesson || !currentModule) return;
-    
+
     if (showExplanation === 0 && explanationContent) {
       setShowExplanation(null);
-      setExplanationContent('');
+      setExplanationContent("");
       return;
     }
 
     setLoadingExplanation(true);
     setShowExplanation(0);
-    setExplanationContent('');
-    
+    setExplanationContent("");
+
     try {
       const content = await fetchAIAssistance(
         currentLesson.content,
         currentLesson.title,
         currentModule.title,
-        'elaborate',
-        noteInput || undefined
+        "elaborate",
+        noteInput || undefined,
       );
       setExplanationContent(content);
     } catch (error) {
-      console.error('Error requesting explanation:', error);
-      toast.error('Failed to get explanation. Please try again.');
+      console.error("Error requesting explanation:", error);
+      toast.error("Failed to get explanation. Please try again.");
       setShowExplanation(null);
     } finally {
       setLoadingExplanation(false);
@@ -403,10 +443,14 @@ export const CourseView: React.FC<CourseViewProps> = ({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between text-[11px] mb-1 font-bold">
-                <span className="text-gray-400 uppercase tracking-widest">Progress</span>
-                <span className="text-blue-600">{Math.round(overallProgress)}%</span>
+                <span className="text-gray-400 uppercase tracking-widest">
+                  Progress
+                </span>
+                <span className="text-blue-600">
+                  {Math.round(overallProgress)}%
+                </span>
               </div>
-              <Progress value={overallProgress} className="h-1.5 bg-blue-50 dark:bg-blue-900/20" />
+              <Progress value={overallProgress} className={progressClassName} />
             </div>
           </div>
 
@@ -417,12 +461,17 @@ export const CourseView: React.FC<CourseViewProps> = ({
                   <h3 className="text-xs uppercase tracking-[0.15em] font-black text-gray-400">
                     Module {mIdx + 1}
                   </h3>
-                  {module.completed && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+                  {module.completed && (
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                  )}
                 </div>
 
                 <div className="space-y-1">
                   {module.lessons.map((lesson, lIdx) => {
-                    const isActive = mIdx === currentModuleIndex && lIdx === currentLessonIndex && !showQuiz;
+                    const isActive =
+                      mIdx === currentModuleIndex &&
+                      lIdx === currentLessonIndex &&
+                      !showQuiz;
                     return (
                       <button
                         key={lesson.id}
@@ -434,15 +483,24 @@ export const CourseView: React.FC<CourseViewProps> = ({
                           }
                         }}
                         disabled={module.locked}
-                        className={`w-full flex items-center gap-3 py-3 px-4 rounded-xl transition-all text-left relative overflow-hidden group ${isActive
-                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 active:scale-[0.98]'
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'
-                          } ${module.locked ? 'opacity-30' : ''}`}
+                        className={`w-full flex items-center gap-3 py-3 px-4 rounded-xl transition-all text-left relative overflow-hidden group ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20 active:scale-[0.98]"
+                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5"
+                        } ${module.locked ? "opacity-30" : ""}`}
                       >
-                        <div className={`shrink-0 ${isActive ? 'text-white' : lesson.completed ? 'text-emerald-500' : 'text-gray-300'}`}>
-                          {lesson.completed ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                        <div
+                          className={`shrink-0 ${isActive ? "text-white" : lesson.completed ? "text-emerald-500" : "text-gray-300"}`}
+                        >
+                          {lesson.completed ? (
+                            <CheckCircle2 className="w-4 h-4" />
+                          ) : (
+                            <Circle className="w-4 h-4" />
+                          )}
                         </div>
-                        <span className={`text-sm tracking-tight truncate ${isActive ? 'font-bold' : 'font-semibold'}`}>
+                        <span
+                          className={`text-sm tracking-tight truncate ${isActive ? "font-bold" : "font-semibold"}`}
+                        >
                           {lesson.title}
                         </span>
                         {isActive && (
@@ -460,13 +518,18 @@ export const CourseView: React.FC<CourseViewProps> = ({
                         }
                       }}
                       disabled={module.locked}
-                      className={`w-full flex items-center gap-3 py-3 px-4 rounded-xl transition-all text-left ${showQuiz && mIdx === currentModuleIndex
-                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20 active:scale-[0.98]'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 border border-transparent'
-                        } ${module.locked ? 'opacity-30' : ''}`}
+                      className={`w-full flex items-center gap-3 py-3 px-4 rounded-xl transition-all text-left ${
+                        showQuiz && mIdx === currentModuleIndex
+                          ? "bg-blue-600 text-white shadow-lg shadow-purple-500/20 active:scale-[0.98]"
+                          : "text-gray-600 dark:text-gray-400 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 border border-transparent"
+                      } ${module.locked ? "opacity-30" : ""}`}
                     >
-                      <Award className={`w-4 h-4 ${showQuiz && mIdx === currentModuleIndex ? 'text-white' : module.quiz.completed ? 'text-emerald-500' : 'text-purple-400'}`} />
-                      <span className={`text-sm tracking-tight ${showQuiz && mIdx === currentModuleIndex ? 'font-bold' : 'font-semibold'}`}>
+                      <Award
+                        className={`w-4 h-4 ${showQuiz && mIdx === currentModuleIndex ? "text-white" : module.quiz.completed ? "text-emerald-500" : "text-purple-400"}`}
+                      />
+                      <span
+                        className={`text-sm tracking-tight ${showQuiz && mIdx === currentModuleIndex ? "font-bold" : "font-semibold"}`}
+                      >
                         Assessment
                       </span>
                     </button>
@@ -504,13 +567,15 @@ export const CourseView: React.FC<CourseViewProps> = ({
                           lessonCompleted={lessonCompletionStatus}
                           savedNotes={userNotes}
                           currentNoteKey={`${currentModule.id}-${currentLesson.id}`}
-                          onToggleSavedNotes={() => setShowSavedNotes(!showSavedNotes)}
+                          onToggleSavedNotes={() =>
+                            setShowSavedNotes(!showSavedNotes)
+                          }
                           showSavedNotes={showSavedNotes}
                         />
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Lesson Navigation Footer */}
                   <div className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-8 py-3">
                     <div className="max-w-7xl mx-auto">
@@ -519,16 +584,22 @@ export const CourseView: React.FC<CourseViewProps> = ({
                           variant="ghost"
                           size="icon"
                           onClick={goToPreviousLesson}
-                          disabled={currentModuleIndex === 0 && currentLessonIndex === 0}
+                          disabled={
+                            currentModuleIndex === 0 && currentLessonIndex === 0
+                          }
                           className="w-10 h-10 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 disabled:opacity-20 shrink-0"
                         >
                           <ArrowLeft className="w-4 h-4 text-gray-500" />
                         </Button>
 
                         <div className="flex flex-col items-center flex-1 mx-3 text-center shrink">
-                          <span className="text-[9px] uppercase tracking-wider font-semibold text-gray-400 leading-none">Module {currentModuleIndex + 1} • {currentLessonIndex + 1}/{currentModule.lessons.length}</span>
+                          <span className="text-[9px] uppercase tracking-wider font-semibold text-gray-400 leading-none">
+                            Module {currentModuleIndex + 1} •{" "}
+                            {currentLessonIndex + 1}/
+                            {currentModule.lessons.length}
+                          </span>
                           <span className="text-xs font-semibold mac-text-primary line-clamp-1 max-w-[180px] md:max-w-[350px] mt-0.5">
-                            {currentLesson?.title || 'Loading...'}
+                            {currentLesson?.title || "Loading..."}
                           </span>
                         </div>
 
@@ -536,7 +607,7 @@ export const CourseView: React.FC<CourseViewProps> = ({
                           {!lessonCompletionStatus ? (
                             <Button
                               onClick={handleLessonComplete}
-                              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg shadow-md shadow-blue-500/20 active:scale-95 transition-all text-xs h-auto"
+                              className={buttonClassName}
                             >
                               <span className="hidden sm:inline">Complete</span>
                               <span className="sm:hidden">Done</span>
@@ -544,8 +615,13 @@ export const CourseView: React.FC<CourseViewProps> = ({
                           ) : (
                             <Button
                               onClick={goToNextLesson}
-                              disabled={currentModuleIndex === courseState.modules.length - 1 && currentLessonIndex === currentModule.lessons.length - 1}
-                              className="bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-semibold px-5 py-2 rounded-lg shadow-md active:scale-95 transition-all text-xs h-auto"
+                              disabled={
+                                currentModuleIndex ===
+                                  courseState.modules.length - 1 &&
+                                currentLessonIndex ===
+                                  currentModule.lessons.length - 1
+                              }
+                              className={buttonClassName}
                             >
                               <span>Next</span>
                               <ChevronRight className="w-3.5 h-3.5 ml-1.5" />
@@ -562,9 +638,12 @@ export const CourseView: React.FC<CourseViewProps> = ({
                     <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
                       <BookOpen className="w-8 h-8 text-gray-400" />
                     </div>
-                    <h3 className="text-lg font-bold mac-text-primary mb-2">Content Unavailable</h3>
+                    <h3 className="text-lg font-bold mac-text-primary mb-2">
+                      Content Unavailable
+                    </h3>
                     <p className="mac-text-secondary max-w-xs mx-auto text-sm">
-                      The requested lesson content could not be found or is currently being loaded.
+                      The requested lesson content could not be found or is
+                      currently being loaded.
                     </p>
                   </div>
                 </div>
@@ -582,8 +661,15 @@ export const CourseView: React.FC<CourseViewProps> = ({
                     </div>
                   ) : (
                     <div className="text-center py-20">
-                      <p className="mac-text-secondary font-bold">Quiz not available for this module.</p>
-                      <Button onClick={() => setShowQuiz(false)} className="mt-4">Back to Lesson</Button>
+                      <p className="mac-text-secondary font-bold">
+                        Quiz not available for this module.
+                      </p>
+                      <Button
+                        onClick={() => setShowQuiz(false)}
+                        className={buttonClassName}
+                      >
+                        Back to Lesson
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -635,73 +721,76 @@ const LessonContent: React.FC<{
   onToggleSavedNotes,
   showSavedNotes,
 }) => {
-    return (
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Main Content Area - Left Column (70%) */}
-        <div className="flex-1 lg:flex-[0.7] space-y-8">
-          {/* Header Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Badge className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-none font-semibold uppercase tracking-wider text-xs px-3 py-1">
-                {module.title}
-              </Badge>
-              {lesson.duration && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-                  <Clock className="w-4 h-4" />
-                  <span className="font-medium">{lesson.duration}</span>
-                </div>
-              )}
-            </div>
-            <h1 className="text-3xl font-bold mac-text-primary tracking-tight leading-tight">
-              {lesson.title}
-            </h1>
+  return (
+    <div className="flex flex-col lg:flex-row gap-8">
+      {/* Main Content Area - Left Column (70%) */}
+      <div className="flex-1 lg:flex-[0.7] space-y-8">
+        {/* Header Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Badge className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-none font-semibold uppercase tracking-wider text-xs px-3 py-1">
+              {module.title}
+            </Badge>
+            {lesson.duration && (
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                <Clock className="w-4 h-4" />
+                <span className="font-medium">{lesson.duration}</span>
+              </div>
+            )}
           </div>
-
-          {/* Main Content Card */}
-          <Card className="p-8 mac-card border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-gray-900 rounded-2xl">
-            <div className="prose dark:prose-invert max-w-none">
-              <div className="whitespace-pre-wrap text-base text-gray-700 dark:text-gray-300 leading-relaxed">
-                {lesson.content}
-              </div>
-            </div>
-          </Card>
-
-          {/* Interactive Examples */}
-          {lesson.examples && lesson.examples.length > 0 && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <div className="w-1 h-6 bg-blue-600 rounded-full" />
-                <h3 className="text-lg font-semibold mac-text-primary uppercase tracking-wide text-sm">
-                  Deep Dive Examples
-                </h3>
-              </div>
-              <div className="space-y-4">
-                {lesson.examples.map((example, index) => (
-                  <Card key={index} className="p-6 mac-card border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/5 rounded-xl hover:shadow-md transition-shadow">
-                    <h4 className="text-base font-semibold mac-text-primary mb-2 flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-xs font-bold shadow-sm">
-                        {index + 1}
-                      </div>
-                      {example.title}
-                    </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
-                      {example.description}
-                    </p>
-                    {example.scenario && (
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-lg text-sm text-blue-600 dark:text-blue-400 italic border border-blue-100 dark:border-blue-900/30">
-                        "{example.scenario}"
-                      </div>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+          <h1 className="text-3xl font-bold mac-text-primary tracking-tight leading-tight">
+            {lesson.title}
+          </h1>
         </div>
 
-        {/* Right Sidebar (30%) - Sticky */}
-        <div className="w-full lg:w-auto lg:flex-[0.3]">
-          <div className="sticky top-6 space-y-6">
+        {/* Main Content Card */}
+        <Card className="p-8 mac-card border border-gray-200 dark:border-gray-800 shadow-lg bg-white dark:bg-gray-900 rounded-2xl">
+          <div className="prose dark:prose-invert max-w-none">
+            <div className="whitespace-pre-wrap text-base text-gray-700 dark:text-gray-300 leading-relaxed">
+              {lesson.content}
+            </div>
+          </div>
+        </Card>
+
+        {/* Interactive Examples */}
+        {lesson.examples && lesson.examples.length > 0 && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-6 bg-blue-600 rounded-full" />
+              <h3 className="text-lg font-semibold mac-text-primary uppercase tracking-wide text-sm">
+                Deep Dive Examples
+              </h3>
+            </div>
+            <div className="space-y-4">
+              {lesson.examples.map((example, index) => (
+                <Card
+                  key={index}
+                  className="p-6 mac-card border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/5 rounded-xl hover:shadow-md transition-shadow"
+                >
+                  <h4 className="text-base font-semibold mac-text-primary mb-2 flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-xs font-bold shadow-sm">
+                      {index + 1}
+                    </div>
+                    {example.title}
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
+                    {example.description}
+                  </p>
+                  {example.scenario && (
+                    <div className="p-3 bg-white dark:bg-gray-800 rounded-lg text-sm text-blue-600 dark:text-blue-400 italic border border-blue-100 dark:border-blue-900/30">
+                      "{example.scenario}"
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Right Sidebar (30%) - Sticky */}
+      <div className="w-full lg:w-auto lg:flex-[0.3]">
+        <div className="sticky top-6 space-y-6">
           {/* YOUR NOTE Section */}
           <Card className="p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-md rounded-xl">
             <div className="flex items-center justify-between mb-4">
@@ -724,14 +813,14 @@ const LessonContent: React.FC<{
               placeholder="Write your observation..."
               className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[140px] mb-4"
             />
-            <Button 
-              onClick={onSaveNote} 
-              disabled={!noteInput.trim()} 
-              className="w-full h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            <Button
+              onClick={onSaveNote}
+              disabled={!noteInput.trim()}
+              className={buttonClassName}
             >
               Save Note
             </Button>
-            
+
             {/* Saved Notes Display */}
             {showSavedNotes && savedNotes.size > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -744,8 +833,8 @@ const LessonContent: React.FC<{
                       key={key}
                       className={`p-2 rounded-lg text-xs bg-gray-50 dark:bg-white/5 border ${
                         key === currentNoteKey
-                          ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-200 dark:border-gray-700'
+                          ? "border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20"
+                          : "border-gray-200 dark:border-gray-700"
                       }`}
                     >
                       <p className="text-gray-700 dark:text-gray-300 line-clamp-3">
@@ -783,7 +872,8 @@ const LessonContent: React.FC<{
               </div>
 
               <p className="text-xs text-gray-300 leading-relaxed mb-6">
-                Get an instant perspective or a quick hint to clarify any confusion.
+                Get an instant perspective or a quick hint to clarify any
+                confusion.
               </p>
 
               <div className="space-y-3">
@@ -793,8 +883,8 @@ const LessonContent: React.FC<{
                   disabled={loadingHint}
                   className={`w-full justify-start text-xs font-bold h-12 rounded-lg border-2 transition-all ${
                     showHint
-                      ? 'bg-yellow-400 text-black border-yellow-400 hover:bg-yellow-400'
-                      : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                      ? "bg-yellow-400 text-black border-yellow-400 hover:bg-yellow-400"
+                      : "bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20"
                   } disabled:opacity-50`}
                 >
                   {loadingHint ? (
@@ -816,8 +906,8 @@ const LessonContent: React.FC<{
                   disabled={loadingExplanation}
                   className={`w-full justify-start text-xs font-bold h-12 rounded-lg border-2 transition-all ${
                     showExplanation === 0
-                      ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-500'
-                      : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                      ? "bg-blue-500 text-white border-blue-500 hover:bg-blue-500"
+                      : "bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20"
                   } disabled:opacity-50`}
                 >
                   {loadingExplanation ? (
@@ -839,12 +929,16 @@ const LessonContent: React.FC<{
                   {loadingHint ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin text-yellow-500" />
-                      <p className="text-xs text-gray-600">Getting your hint...</p>
+                      <p className="text-xs text-gray-600">
+                        Getting your hint...
+                      </p>
                     </div>
                   ) : hintContent ? (
                     <div className="flex items-start gap-2">
                       <Lightbulb className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                      <p className="text-xs font-medium leading-relaxed">{hintContent}</p>
+                      <p className="text-xs font-medium leading-relaxed">
+                        {hintContent}
+                      </p>
                     </div>
                   ) : null}
                 </div>
@@ -855,23 +949,27 @@ const LessonContent: React.FC<{
                   {loadingExplanation ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                      <p className="text-xs text-gray-600">Getting explanation...</p>
+                      <p className="text-xs text-gray-600">
+                        Getting explanation...
+                      </p>
                     </div>
                   ) : explanationContent ? (
                     <div className="flex items-start gap-2">
                       <HelpCircle className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                      <p className="text-xs font-medium leading-relaxed">{explanationContent}</p>
+                      <p className="text-xs font-medium leading-relaxed">
+                        {explanationContent}
+                      </p>
                     </div>
                   ) : null}
                 </div>
               )}
             </div>
           </Card>
-          </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 const InteractiveQuizView: React.FC<{
   quiz: Quiz;
@@ -889,48 +987,82 @@ const InteractiveQuizView: React.FC<{
   };
 
   const handleNext = () => {
-    if (currentQuestion < quiz.questions.length - 1) setCurrentQuestion(currentQuestion + 1);
+    if (currentQuestion < quiz.questions.length - 1)
+      setCurrentQuestion(currentQuestion + 1);
     else setShowResults(true);
   };
 
   if (showResults) {
-    const correct = quiz.questions.filter((q, i) => answers[i] === q.correctAnswer).length;
+    const correct = quiz.questions.filter(
+      (q, i) => answers[i] === q.correctAnswer,
+    ).length;
     const score = (correct / quiz.questions.length) * 100;
     const passed = score >= quiz.passingScore;
 
     return (
       <div className="space-y-8">
         <div className="text-center space-y-4 pt-6">
-          <div className={`w-32 h-32 rounded-full mx-auto flex items-center justify-center p-1 border-4 ${passed ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-red-500 bg-red-50 dark:bg-red-900/20'}`}>
+          <div
+            className={`w-32 h-32 rounded-full mx-auto flex items-center justify-center p-1 border-4 ${passed ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" : "border-red-500 bg-red-50 dark:bg-red-900/20"}`}
+          >
             <div className="w-full h-full rounded-full flex flex-col items-center justify-center">
               <span className="text-3xl font-black">{Math.round(score)}%</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest">Score</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">
+                Score
+              </span>
             </div>
           </div>
           <div className="space-y-2">
-            <h2 className="text-4xl font-black mac-text-primary tracking-tight">{passed ? 'Module Mastered!' : 'Keep Practicing'}</h2>
-            <p className="text-gray-500 font-bold">You answered {correct} out of {quiz.questions.length} questions correctly.</p>
+            <h2 className="text-4xl font-black mac-text-primary tracking-tight">
+              {passed ? "Module Mastered!" : "Keep Practicing"}
+            </h2>
+            <p className="text-gray-500 font-bold">
+              You answered {correct} out of {quiz.questions.length} questions
+              correctly.
+            </p>
           </div>
           <div className="flex gap-4 justify-center pt-8">
-            <Button onClick={() => onComplete(score)} className="h-14 px-10 rounded-2xl bg-blue-600 font-black shadow-xl active:scale-95 transition-all">
-              {passed ? 'Unlock Next Module' : 'Review & Finish'}
+            <Button
+              onClick={() => onComplete(score)}
+              className={buttonClassName}
+            >
+              {passed ? "Unlock Next Module" : "Review & Finish"}
             </Button>
           </div>
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-xs uppercase tracking-[0.2em] font-black text-gray-400">Response Review</h3>
+          <h3 className="text-xs uppercase tracking-[0.2em] font-black text-gray-400">
+            Response Review
+          </h3>
           {quiz.questions.map((q, i) => {
             const isCorrect = answers[i] === q.correctAnswer;
             return (
-              <Card key={i} className={`p-6 border-none rounded-3xl ${isCorrect ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : 'bg-red-50/50 dark:bg-red-900/10'}`}>
+              <Card
+                key={i}
+                className={`p-6 border-none rounded-3xl ${isCorrect ? "bg-emerald-50/50 dark:bg-emerald-900/10" : "bg-red-50/50 dark:bg-red-900/10"}`}
+              >
                 <div className="flex justify-between items-start mb-4">
-                  <p className="font-bold mac-text-primary pr-8">{i + 1}. {q.question}</p>
-                  {isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <X className="w-5 h-5 text-red-500" />}
+                  <p className="font-bold mac-text-primary pr-8">
+                    {i + 1}. {q.question}
+                  </p>
+                  {isCorrect ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  ) : (
+                    <X className="w-5 h-5 text-red-500" />
+                  )}
                 </div>
                 <div className="grid gap-2">
-                  <p className={`text-sm font-bold ${isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>Your answer: {q.options[answers[i]] || 'Skipped'}</p>
-                  {!isCorrect && <p className="text-sm font-bold text-emerald-600">Correct: {q.options[q.correctAnswer]}</p>}
+                  <p
+                    className={`text-sm font-bold ${isCorrect ? "text-emerald-600" : "text-red-600"}`}
+                  >
+                    Your answer: {q.options[answers[i]] || "Skipped"}
+                  </p>
+                  {!isCorrect && (
+                    <p className="text-sm font-bold text-emerald-600">
+                      Correct: {q.options[q.correctAnswer]}
+                    </p>
+                  )}
                 </div>
               </Card>
             );
@@ -944,31 +1076,49 @@ const InteractiveQuizView: React.FC<{
   return (
     <div className="space-y-12 py-12">
       <div className="space-y-4">
-        <Badge className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 border-none font-bold uppercase tracking-widest text-[9px]">Module Assessment</Badge>
+        <Badge className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 border-none font-bold uppercase tracking-widest text-[9px]">
+          Module Assessment
+        </Badge>
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-black mac-text-primary tracking-tight">Question {currentQuestion + 1}</h2>
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{currentQuestion + 1} of {quiz.questions.length}</span>
+          <h2 className="text-3xl font-black mac-text-primary tracking-tight">
+            Question {currentQuestion + 1}
+          </h2>
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+            {currentQuestion + 1} of {quiz.questions.length}
+          </span>
         </div>
-        <Progress value={((currentQuestion + 1) / quiz.questions.length) * 100} className="h-1 bg-purple-50 dark:bg-purple-900/20" />
+        <Progress
+          value={((currentQuestion + 1) / quiz.questions.length) * 100}
+          className="h-1 bg-purple-50 dark:bg-purple-900/20"
+        />
       </div>
 
       <div className="space-y-8">
-        <h3 className="text-2xl font-bold mac-text-primary leading-snug">{question.question}</h3>
+        <h3 className="text-2xl font-bold mac-text-primary leading-snug">
+          {question.question}
+        </h3>
         <div className="grid gap-4">
           {question.options.map((option, idx) => (
             <button
               key={idx}
               onClick={() => handleAnswer(idx)}
-              className={`w-full p-6 text-left rounded-[1.5rem] border-4 transition-all ${answers[currentQuestion] === idx
-                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/10'
-                : 'border-gray-50 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10 bg-white dark:bg-white/5'
-                }`}
+              className={`w-full p-6 text-left rounded-[1.5rem] border-4 transition-all ${
+                answers[currentQuestion] === idx
+                  ? "border-blue-600 bg-blue-50 dark:bg-blue-900/10"
+                  : "border-gray-50 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10 bg-white dark:bg-white/5"
+              }`}
             >
               <div className="flex items-center gap-4">
-                <div className={`w-6 h-6 rounded-full border-2 flex flex-col items-center justify-center shrink-0 ${answers[currentQuestion] === idx ? 'border-blue-600' : 'border-gray-300'}`}>
-                  {answers[currentQuestion] === idx && <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
+                <div
+                  className={`w-6 h-6 rounded-full border-2 flex flex-col items-center justify-center shrink-0 ${answers[currentQuestion] === idx ? "border-blue-600" : "border-gray-300"}`}
+                >
+                  {answers[currentQuestion] === idx && (
+                    <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                  )}
                 </div>
-                <span className={`text-lg font-bold ${answers[currentQuestion] === idx ? 'text-blue-700 dark:text-blue-400' : 'mac-text-primary'}`}>
+                <span
+                  className={`text-lg font-bold ${answers[currentQuestion] === idx ? "text-blue-700 dark:text-blue-400" : "mac-text-primary"}`}
+                >
                   {option}
                 </span>
               </div>
@@ -981,10 +1131,12 @@ const InteractiveQuizView: React.FC<{
         <Button
           onClick={handleNext}
           disabled={answers[currentQuestion] === undefined}
-          className="h-16 px-12 rounded-3xl bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-black shadow-2xl active:scale-95 transition-all"
+          className={buttonClassName}
         >
-          {currentQuestion < quiz.questions.length - 1 ? 'Next Question' : 'Complete Assessment'}
-          <ChevronRight className="w-5 h-5 ml-4" />
+          {currentQuestion < quiz.questions.length - 1
+            ? "Next Question"
+            : "Complete Assessment"}
+          <ChevronRight className="w-5 h-5 ml-2" />
         </Button>
       </div>
     </div>
