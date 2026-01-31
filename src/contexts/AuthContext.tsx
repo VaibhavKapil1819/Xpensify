@@ -1,13 +1,17 @@
 "use client";
-import { Session, User } from '@/models/user';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { Session, User } from "@/models/user";
+import { createContext, useContext, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+  ) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   loading: boolean;
@@ -28,20 +32,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkSession = async () => {
     try {
-      const response = await fetch('/api/auth/session', {
-        method: 'GET',
-        credentials: 'include',
+      const response = await fetch("/api/auth/session", {
+        method: "GET",
+        credentials: "include",
       });
 
       if (response.ok) {
         const data = await response.json();
+        if (data.user === null && data.session === null) {
+          navigate.replace("/");
+          return;
+        }
         if (data.user && data.session) {
           setUser(data.user);
           setSession(data.session);
         }
       }
     } catch (error) {
-      console.error('Session check error:', error);
+      console.error("Session check error:", error);
     } finally {
       setLoading(false);
     }
@@ -49,19 +57,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({ email, password, fullName }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || 'Signup failed');
+        toast.error(data.error || "Signup failed");
         return { error: data.error };
       }
 
@@ -69,11 +77,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
       setSession(data.session);
 
-      toast.success('Account created! Redirecting to onboarding...');
-      setTimeout(() => navigate.push('/onboarding'), 1000);
+      toast.success("Account created! Redirecting to onboarding...");
+      setTimeout(() => navigate.push("/onboarding"), 1000);
       return { error: null };
     } catch (error: any) {
-      const errorMessage = error.message || 'An error occurred during signup';
+      const errorMessage = error.message || "An error occurred during signup";
       toast.error(errorMessage);
       return { error: errorMessage };
     }
@@ -81,19 +89,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
+      const response = await fetch("/api/auth/signin", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || 'Sign in failed');
+        toast.error(data.error || "Sign in failed");
         return { error: data.error };
       }
 
@@ -101,11 +109,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
       setSession(data.session);
 
-      toast.success('Welcome back!');
-      navigate.push('/dashboard');
+      toast.success("Welcome back!");
+      navigate.push("/dashboard");
       return { error: null };
     } catch (error: any) {
-      const errorMessage = error.message || 'An error occurred during signin';
+      const errorMessage = error.message || "An error occurred during signin";
       toast.error(errorMessage);
       return { error: errorMessage };
     }
@@ -113,23 +121,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await fetch('/api/auth/signout', {
-        method: 'POST',
-        credentials: 'include',
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "include",
       });
 
       setUser(null);
       setSession(null);
-      toast.success('Signed out successfully');
-      navigate.replace('/');
+      sessionStorage.clear();
+      toast.success("Signed out successfully");
+      navigate.replace("/");
     } catch (error) {
-      console.error('Signout error:', error);
-      toast.error('An error occurred during signout');
+      console.error("Signout error:", error);
+      toast.error("An error occurred during signout");
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, signUp, signIn, signOut, loading }}>
+    <AuthContext.Provider
+      value={{ user, session, signUp, signIn, signOut, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -138,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
