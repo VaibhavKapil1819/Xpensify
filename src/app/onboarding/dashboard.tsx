@@ -66,14 +66,14 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center mac-bg p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900">
       <Card className="w-full max-w-2xl p-8 mac-card animate-fade-in">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-3xl font-bold mac-text-primary">
               Let's Get Started
             </h2>
-            <span className="text-sm mac-text-secondary">Step {step} of 3</span>
+            <span className="text-sm font-semibold">Step {step} of 3</span>
           </div>
           <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
             <div
@@ -294,6 +294,7 @@ const Dashboard: React.FC = () => {
         )}
       </Card>
     </div>
+
   );
 };
 

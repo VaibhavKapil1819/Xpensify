@@ -655,6 +655,8 @@ export default function Goals() {
               {goals.map((goal) => {
                 const targetAmount = Number(goal.target_amount || 0);
                 const currentAmount = Number(goal.current_amount);
+
+                // const completionRate =
                 const progress =
                   targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
 
