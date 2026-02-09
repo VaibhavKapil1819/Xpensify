@@ -6,15 +6,16 @@ import { z } from 'zod';
 
 const signUpSchema = z.object({
     email: z.string().email('Invalid email address'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
     fullName: z.string().min(1, 'Full name is required'),
+    otp: z.string().length(6, 'OTP must be 6 digits'),
 });
 
 // Helper to check if error is a database connection error
 function isDatabaseConnectionError(error: any): boolean {
-    return error?.code === 'P1001' || 
-           error?.message?.includes('Can\'t reach database server') ||
-           error?.message?.includes('connection');
+    return error?.code === 'P1001' ||
+        error?.message?.includes('Can\'t reach database server') ||
+        error?.message?.includes('connection');
 }
 
 export async function POST(request: NextRequest) {
@@ -23,19 +24,37 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const validatedData = signUpSchema.parse(body);
 
-        const { email, password, fullName } = validatedData;
+        const { email, password, fullName, otp } = validatedData;
+
+        // 1. Verify OTP
+        const verificationToken = await prisma.verificationToken.findFirst({
+            where: {
+                email,
+                token: otp,
+                expires_at: {
+                    gt: new Date(),
+                },
+            },
+        });
+
+        if (!verificationToken) {
+            return NextResponse.json(
+                { error: 'Invalid or expired OTP' },
+                { status: 400 }
+            );
+        }
 
         // Check if user already exists
         let existingUser;
         try {
             existingUser = await prisma.profile.findUnique({
-            where: { email },
-        });
+                where: { email },
+            });
         } catch (dbError: any) {
             if (isDatabaseConnectionError(dbError)) {
                 console.error('Database connection error during signup:', dbError);
                 return NextResponse.json(
-                    { 
+                    {
                         error: 'Database temporarily unavailable',
                         message: 'Unable to create account. Please check your database connection and try again later.',
                     },
@@ -59,28 +78,28 @@ export async function POST(request: NextRequest) {
         let user;
         try {
             user = await prisma.profile.create({
-            data: {
-                email,
-                password_hash: passwordHash,
-                full_name: fullName,
-            },
-            select: {
-                id: true,
-                email: true,
-                full_name: true,
-                primary_goal: true,
-                risk_level: true,
-                learning_preference: true,
-                currency: true,
-                created_at: true,
-                updated_at: true,
-            },
-        });
+                data: {
+                    email,
+                    password_hash: passwordHash,
+                    full_name: fullName,
+                },
+                select: {
+                    id: true,
+                    email: true,
+                    full_name: true,
+                    primary_goal: true,
+                    risk_level: true,
+                    learning_preference: true,
+                    currency: true,
+                    created_at: true,
+                    updated_at: true,
+                },
+            });
         } catch (dbError: any) {
             if (isDatabaseConnectionError(dbError)) {
                 console.error('Database connection error during user creation:', dbError);
                 return NextResponse.json(
-                    { 
+                    {
                         error: 'Database temporarily unavailable',
                         message: 'Unable to create account. Please check your database connection and try again later.',
                     },
@@ -98,6 +117,11 @@ export async function POST(request: NextRequest) {
 
         // Set auth cookie
         await setAuthCookie(token);
+
+        // Delete used OTP
+        await prisma.verificationToken.delete({
+            where: { id: verificationToken.id },
+        });
 
         // Return user data and session
         return NextResponse.json({
@@ -122,7 +146,7 @@ export async function POST(request: NextRequest) {
         if (isDatabaseConnectionError(error)) {
             console.error('Database connection error during signup:', error);
             return NextResponse.json(
-                { 
+                {
                     error: 'Database temporarily unavailable',
                     message: 'Unable to create account. Please check your database connection and try again later.',
                 },

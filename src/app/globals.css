@@ -168,6 +168,9 @@
         hsl(217, 91%, 65%) 0%,
         hsl(217, 91%, 60%) 50%,
         hsl(221, 83%, 55%) 100%);
+    --gradient-green: linear-gradient(135deg,
+        hsl(142, 76%, 36%) 0%,
+        hsl(142, 76%, 48%) 100%);
     --gradient-shimmer: linear-gradient(90deg,
         transparent 0%,
         hsl(217 91% 60% / 0.3) 50%,
@@ -175,11 +178,12 @@
     --gradient-artistic: radial-gradient(ellipse at top, hsl(217, 91%, 12%) 0%, hsl(217, 91%, 8%) 100%);
 
     /* Premium Shadows & Glows - Blue */
-    --shadow-glow: 0 0 40px hsl(217 91% 50% / 0.4);
-    --shadow-card: 0 12px 48px hsl(0 0% 0% / 0.7);
-    --shadow-intense: 0 0 80px hsl(217 91% 50% / 0.6);
-    --shadow-soft: 0 4px 24px hsl(0 0% 0% / 0.5);
-    --shadow-elegant: 0 8px 32px hsl(217 91% 50% / 0.3);
+    --shadow-glow: 0 0 25px hsl(217 91% 50% / 0.25);
+    --shadow-green-glow: 0 0 25px hsl(142 76% 48% / 0.25);
+    --shadow-card: 0 10px 40px hsl(0 0% 0% / 0.35);
+    --shadow-intense: 0 0 40px hsl(217 91% 50% / 0.3);
+    --shadow-soft: 0 4px 16px hsl(0 0% 0% / 0.2);
+    --shadow-elegant: 0 6px 24px hsl(217 91% 50% / 0.15);
 
     /* Glass morphism - Blue */
     --glass-bg: hsl(217 91% 10% / 0.85);
@@ -302,6 +306,15 @@
     animation: shimmer 3s ease-in-out infinite;
   }
 
+  .animate-shimmer-green {
+    background: linear-gradient(90deg,
+        transparent 0%,
+        hsl(142 76% 48% / 0.2) 50%,
+        transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
   /* Fade In Up */
   @keyframes fade-in-up {
     from {
@@ -361,11 +374,11 @@
 
     0%,
     100% {
-      filter: drop-shadow(0 0 10px hsl(217 91% 50% / 0.5));
+      filter: drop-shadow(0 0 8px hsl(217 91% 50% / 0.3));
     }
 
     50% {
-      filter: drop-shadow(0 0 25px hsl(217 91% 50% / 0.8));
+      filter: drop-shadow(0 0 15px hsl(217 91% 50% / 0.5));
     }
   }
 
@@ -389,7 +402,8 @@
     --accent-dark: 217 91% 35%;
     --glass-bg: hsl(217 91% 10% / 0.9);
     --glass-border: hsl(217 91% 65% / 0.35);
-    --shadow-glow: 0 0 50px hsl(217 91% 65% / 0.5);
+    --shadow-glow: 0 0 30px hsl(217 91% 65% / 0.3);
+    --shadow-green-glow: 0 0 30px hsl(142 76% 48% / 0.3);
   }
 }
 

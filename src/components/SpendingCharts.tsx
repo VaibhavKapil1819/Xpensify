@@ -120,51 +120,66 @@ export default function SpendingCharts({ transactions, analysis }: SpendingChart
         <div className="space-y-6">
             {/* Charts Grid */}
             <div className="grid md:grid-cols-2 gap-6">
-                {/* Category Breakdown Pie Chart - Updated with Top-Right Legend List */}
-                <Card className="p-6 relative">
-                    <h4 className="font-semibold mb-4">Spending by Category</h4>
+                {/* Category Breakdown Pie Chart - Fixed Overlap */}
+                <Card className="p-6">
+                    <h4 className="font-semibold mb-6">Spending by Category</h4>
 
-                    {/* Legend List - Top Right */}
-                    <div className="absolute top-6 right-6 inline-block items-center gap-2 bg-blue-100 text-blue-700 px-6 py-2 rounded-sm text-sm font-medium mb-6">
-                        <h5 className="font-medium text-sm mb-3 text-foreground tracking-tight">Category Breakdown</h5>
-                        <ul className="space-y-2 text-xs">
-                            {categoryLegend.map((item, index) => (
-                                <li key={index} className="flex items-center gap-2">
-                                    <div
-                                        className="w-3 h-3 rounded-full flex-shrink-0"
-                                        style={{ backgroundColor: item.color }}
+                    <div className="flex flex-col lg:flex-row items-center gap-8">
+                        <div className="w-full lg:w-1/2 min-h-[300px]">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={categoryData}
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={100}
+                                        innerRadius={60}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {categoryData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        labelClassName='text-foreground'
+                                        wrapperClassName='rounded-xl shadow-2xl border-0 !bg-background/80 backdrop-blur-md'
+                                        formatter={(value: number, name: string) => {
+                                            const total = categoryData.reduce((sum, item) => sum + item.value, 0);
+                                            const percent = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return [`₹${value.toLocaleString()} (${percent}%)`, name];
+                                        }}
                                     />
-                                    <span className="font-medium text-foreground truncate">{item.name}</span>
-                                    {/* <span className="text-muted-foreground ml-auto">₹{item.value.toLocaleString()}</span> */}
-                                    <span className="text-muted-foreground">({item.percent}%)</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
 
-                    <ResponsiveContainer width="100%" height={350}>
-                        <PieChart>
-                            <Pie
-                                data={categoryData}
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={90}
-                                fill="#8884d8"
-                                dataKey="value"
-                            >
-                                {categoryData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {/* Legend List - Side by Side */}
+                        <div className="w-full lg:w-1/2 space-y-4">
+                            <h5 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/80 mb-4 px-1">
+                                Category Breakdown
+                            </h5>
+                            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                                {categoryLegend.map((item, index) => (
+                                    <li key={index} className="flex items-center gap-3 p-2 rounded-xl bg-foreground/[0.02] border border-foreground/[0.05] transition-all hover:bg-foreground/[0.04]">
+                                        <div
+                                            className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
+                                            style={{ backgroundColor: item.color }}
+                                        />
+                                        <div className="flex-1 flex justify-between items-center min-w-0">
+                                            <span className="text-sm font-medium text-foreground truncate mr-2">{item.name}</span>
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                <span className="text-xs font-bold text-foreground">₹{item.value.toLocaleString()}</span>
+                                                <span className="text-[10px] font-medium text-muted-foreground px-1.5 py-0.5 rounded-md bg-foreground/5">
+                                                    {item.percent}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </li>
                                 ))}
-                            </Pie>
-                            <Tooltip labelClassName='text-foreground ' wrapperClassName='rounded-sm'
-                                formatter={(value: number, name: string, props: any) => {
-                                    const total = categoryData.reduce((sum, item) => sum + item.value, 0);
-                                    const percent = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                    return [`₹${value.toLocaleString()} (${percent}%)`, name];
-                                }}
-                            />
-                        </PieChart>
-                    </ResponsiveContainer>
+                            </ul>
+                        </div>
+                    </div>
                 </Card>
 
                 {/* Income vs Expenses Bar Chart */}
