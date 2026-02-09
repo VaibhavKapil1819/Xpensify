@@ -24,29 +24,7 @@ export async function POST(request: Request) {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
-        // Store OTP in database
-        await prisma.verificationToken.upsert({
-            where: {
-                email_token: {
-                    email,
-                    token: otp, // This is not ideal because email_token is unique, better to delete old ones or use email as key
-                },
-            },
-            update: {
-                token: otp,
-                expires_at: expiresAt,
-            },
-            create: {
-                email,
-                token: otp,
-                expires_at: expiresAt,
-            },
-        });
-
-        // Better logic for upsert avoiding unique constraint on token if multiple users request at same time
-        // Actually, @@unique([email, token]) is what I have. If I want to allow only one active OTP per email, 
-        // I should probably just delete existing ones for that email.
-
+        // Store OTP in database - Delete any existing OTPs for this email first
         await prisma.verificationToken.deleteMany({
             where: { email }
         });
