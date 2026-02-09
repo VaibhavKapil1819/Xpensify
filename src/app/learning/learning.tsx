@@ -539,21 +539,19 @@ const LearningCoach: React.FC = () => {
             <div className="flex gap-2 border-b">
               <button
                 onClick={() => setShowCourseLibrary(false)}
-                className={`px-4 py-2 font-medium transition-colors ${
-                  !showCourseLibrary
-                    ? "border-b-2 border-blue-600 text-blue-600"
-                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
+                className={`px-4 py-2 font-medium transition-colors ${!showCourseLibrary
+                  ? "border-b-2 border-blue-600 text-blue-600"
+                  : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
               >
                 💬 Chat
               </button>
               <button
                 onClick={() => setShowCourseLibrary(true)}
-                className={`px-4 py-2 font-medium transition-colors relative ${
-                  showCourseLibrary
-                    ? "border-b-2 border-blue-600 text-blue-600"
-                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
+                className={`px-4 py-2 font-medium transition-colors relative ${showCourseLibrary
+                  ? "border-b-2 border-blue-600 text-blue-600"
+                  : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
               >
                 📚 My Courses
                 {savedCourses.length > 0 && (
@@ -814,9 +812,9 @@ const LearningCoach: React.FC = () => {
                                               savedCourses.find(
                                                 (c) =>
                                                   c.title ===
-                                                    parsedCourse!.title ||
+                                                  parsedCourse!.title ||
                                                   c.title.toLowerCase() ===
-                                                    parsedCourse!.title.toLowerCase(),
+                                                  parsedCourse!.title.toLowerCase(),
                                               );
 
                                             if (savedCourse) {
@@ -903,16 +901,16 @@ const LearningCoach: React.FC = () => {
                               <div className="flex-1">
                                 <h4 className="font-semibold text-red-800 dark:text-red-200 mb-1">
                                   {chatError.message?.includes("quota") ||
-                                  chatError.message?.includes("429")
+                                    chatError.message?.includes("429")
                                     ? "API Quota Exceeded"
                                     : "Error"}
                                 </h4>
                                 <p className="text-sm text-red-700 dark:text-red-300">
                                   {chatError.message?.includes("quota") ||
-                                  chatError.message?.includes("429")
+                                    chatError.message?.includes("429")
                                     ? "You've reached the daily limit for AI requests (20 requests/day on free tier). Please try again later or upgrade your API plan."
                                     : chatError.message ||
-                                      "Something went wrong. Please try again."}
+                                    "Something went wrong. Please try again."}
                                 </p>
                               </div>
                             </div>
@@ -1097,11 +1095,10 @@ const WelcomeScreen: React.FC<{
                   <button
                     key={level}
                     onClick={() => setKnowledgeLevel(level as any)}
-                    className={`p-4 rounded-lg border-2 transition-all text-left ${
-                      knowledgeLevel === level
-                        ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
-                        : "border-gray-200 dark:border-gray-700 hover:border-blue-300"
-                    }`}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${knowledgeLevel === level
+                      ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-gray-200 dark:border-gray-700 hover:border-blue-300"
+                      }`}
                   >
                     <p className="font-medium capitalize mac-text-primary">
                       {level}
@@ -1169,11 +1166,10 @@ const WelcomeScreen: React.FC<{
                   <button
                     key={style.value}
                     onClick={() => setLearningStyle(style.value as any)}
-                    className={`p-4 rounded-lg border-2 transition-all text-left ${
-                      learningStyle === style.value
-                        ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
-                        : "border-gray-200 dark:border-gray-700 hover:border-blue-300"
-                    }`}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${learningStyle === style.value
+                      ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-gray-200 dark:border-gray-700 hover:border-blue-300"
+                      }`}
                   >
                     <p className="font-medium mac-text-primary">
                       {style.label}
@@ -1193,7 +1189,7 @@ const WelcomeScreen: React.FC<{
               >
                 Back
               </Button>
-              <Button onClick={handleComplete} className="flex-1">
+              <Button onClick={handleComplete} className={`flex-1 ${buttonClassName}`}>
                 <BookOpen className="w-4 h-4 mr-2" />
                 Start Learning
               </Button>
