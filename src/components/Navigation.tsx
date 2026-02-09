@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "About", href: "#about" },
+  // { label: "Features", href: "#features" },
+  // { label: "How It Works", href: "#how-it-works" },
+  // { label: "Pricing", href: "#pricing" },
+  // { label: "About", href: "#about" },
 ];
 
 const Navigation = () => {
@@ -26,14 +26,13 @@ const Navigation = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-500">
       {/* Elegant background gradient */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/8 via-transparent to-[hsl(var(--secondary))/0.08] blur-2xl" />
-      
+
       {/* Glass morphism nav bar */}
-      <div 
-        className={`border-b backdrop-blur-xl transition-all duration-500 ${
-          scrolled 
-            ? 'border-[hsl(var(--glass-border))] bg-[hsl(var(--glass-bg))] shadow-[var(--shadow-elegant)]' 
-            : 'border-white/10 bg-background/60'
-        }`}
+      <div
+        className={`border-b backdrop-blur-xl transition-all duration-500 ${scrolled
+          ? 'border-[hsl(var(--glass-border))] bg-[hsl(var(--glass-bg))] shadow-[var(--shadow-elegant)]'
+          : 'border-white/10 bg-background/60'
+          }`}
       >
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between py-4">
@@ -54,7 +53,7 @@ const Navigation = () => {
             </Link>
 
             {/* Desktop Navigation with elegant hover effects */}
-            <div className="hidden md:flex items-center gap-8 text-sm font-medium">
+            {/* <div className="hidden md:flex items-center gap-8 text-sm font-medium">
               {navLinks.map((link, index) => (
                 <a
                   key={link.href}
@@ -67,14 +66,14 @@ const Navigation = () => {
                   <span className="absolute inset-0 -z-10 bg-blue-600/5 rounded-lg scale-0 group-hover:scale-100 transition-transform duration-300" />
                 </a>
               ))}
-            </div>
+            </div> */}
 
             {/* Actions with premium buttons */}
             <div className="flex items-center gap-3">
               <Link href="/auth" className="hidden md:inline-flex">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="bg-[hsl(var(--glass-bg))] backdrop-blur-md border border-[hsl(var(--glass-border))] hover:bg-blue-600/10 hover:border-blue-600/40 transition-all duration-300 text-foreground/90 font-medium"
                 >
                   Sign In
@@ -88,9 +87,9 @@ const Navigation = () => {
                   Get Started
                 </Button>
               </Link>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="md:hidden bg-[hsl(var(--glass-bg))] backdrop-blur-md border border-[hsl(var(--glass-border))] hover:bg-blue-600/10 transition-all duration-300"
               >
                 <Menu className="w-5 h-5" />

@@ -69,6 +69,12 @@ const Budget: React.FC = () => {
   const [analyzingSpending, setAnalyzingSpending] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [filterType, setFilterType] = useState<TransactionType | "all">("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [dateRange, setDateRange] = useState({
+    start: "",
+    end: "",
+  });
 
   // Delete Transaction
   const [deletingTransaction, setDeletingTransaction] = useState(false);
@@ -301,18 +307,33 @@ const Budget: React.FC = () => {
     );
   };
 
-  // Calculate totals and balances
-  const expenses = transactions.filter((t) => t.type === "expense");
-  const income = transactions.filter((t) => t.type === "income");
+  // Filtering logic
+  const filteredTransactions = transactions.filter((t) => {
+    const matchesType = filterType === "all" || t.type === filterType;
+    const matchesCategory =
+      filterCategory === "all" || t.category === filterCategory;
+    const matchesDate =
+      (!dateRange.start || new Date(t.date) >= new Date(dateRange.start)) &&
+      (!dateRange.end || new Date(t.date) <= new Date(dateRange.end));
+    return matchesType && matchesCategory && matchesDate;
+  });
 
-  const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
-  const totalIncome = income.reduce((sum, t) => sum + Number(t.amount), 0);
+  // Calculate totals and balances based on ALL transactions (global summary)
+  const allExpenses = transactions.filter((t) => t.type === "expense");
+  const allIncome = transactions.filter((t) => t.type === "income");
+
+  const totalExpenses = allExpenses.reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalIncome = allIncome.reduce((sum, t) => sum + Number(t.amount), 0);
   const netBalance = totalIncome - totalExpenses;
 
-  const categoryTotals = transactions.reduce((acc, t) => {
+  // Category totals for charts - still based on filtered data
+  const categoryTotals = filteredTransactions.reduce((acc, t) => {
     acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
     return acc;
   }, {} as Record<string, number>);
+
+  // Unique categories for filter dropdown to avoid key collisions
+  const uniqueFilterCategories = Array.from(new Set([...expenseCategories, ...incomeCategories]));
 
   if (loading) {
     return <BudgetSkeletion />;
@@ -344,7 +365,7 @@ const Budget: React.FC = () => {
               ₹{totalIncome.toLocaleString()}
             </p>
             <p className="text-xs mac-text-secondary">
-              {income.length} transactions
+              {allIncome.length} transactions
             </p>
           </Card>
 
@@ -362,7 +383,7 @@ const Budget: React.FC = () => {
               ₹{totalExpenses.toLocaleString()}
             </p>
             <p className="text-xs mac-text-secondary">
-              {expenses.length} transactions
+              {allExpenses.length} transactions
             </p>
           </Card>
 
@@ -370,14 +391,12 @@ const Budget: React.FC = () => {
           <Card className="mac-card p-6 transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer">
             <div className="flex items-center gap-3 mb-3">
               <div
-                className={`w-10 h-10 rounded-full ${
-                  netBalance >= 0 ? "bg-blue-50" : "bg-red-50"
-                } flex items-center justify-center`}
+                className={`w-10 h-10 rounded-full ${netBalance >= 0 ? "bg-blue-50" : "bg-red-50"
+                  } flex items-center justify-center`}
               >
                 <TrendingUp
-                  className={`w-5 h-5 ${
-                    netBalance >= 0 ? "text-blue-600" : "text-red-600"
-                  }`}
+                  className={`w-5 h-5 ${netBalance >= 0 ? "text-blue-600" : "text-red-600"
+                    }`}
                 />
               </div>
               <h3 className="text-sm font-medium mac-text-primary">
@@ -385,9 +404,8 @@ const Budget: React.FC = () => {
               </h3>
             </div>
             <p
-              className={`text-3xl font-bold mb-1 ${
-                netBalance >= 0 ? "text-blue-600" : "text-red-600"
-              }`}
+              className={`text-3xl font-bold mb-1 ${netBalance >= 0 ? "text-blue-600" : "text-red-600"
+                }`}
             >
               ₹{netBalance.toLocaleString()}
             </p>
@@ -408,7 +426,7 @@ const Budget: React.FC = () => {
               {transactions.length}
             </p>
             <p className="text-xs mac-text-secondary">
-              {income.length} income • {expenses.length} expenses
+              {allIncome.length} income • {allExpenses.length} expenses
             </p>
           </Card>
         </div>
@@ -432,6 +450,73 @@ const Budget: React.FC = () => {
             </Button>
           </div>
 
+          {/* Filters UI */}
+          <div className="flex flex-wrap gap-4 mb-6 p-4 bg-foreground/[0.02] rounded-2xl border border-foreground/[0.05]">
+            <div className="flex-1 min-w-[150px]">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 block px-1">Type</Label>
+              <Select value={filterType} onValueChange={(v: any) => setFilterType(v)}>
+                <SelectTrigger className="h-10 bg-background border-foreground/10 rounded-xl">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="expense">Expenses</SelectItem>
+                  <SelectItem value="income">Income</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex-1 min-w-[150px]">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 block px-1">Category</Label>
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="h-10 bg-background border-foreground/10 rounded-xl">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {uniqueFilterCategories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex-1 min-w-[150px]">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 block px-1">From</Label>
+              <Input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                className="h-10 bg-background border-foreground/10 rounded-xl"
+              />
+            </div>
+
+            <div className="flex-1 min-w-[150px]">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 block px-1">To</Label>
+              <Input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                className="h-10 bg-background border-foreground/10 rounded-xl"
+              />
+            </div>
+
+            <div className="flex items-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFilterType("all");
+                  setFilterCategory("all");
+                  setDateRange({ start: "", end: "" });
+                }}
+                className="h-10 hover:bg-red-50 hover:text-red-600 text-muted-foreground transition-all px-4 rounded-xl"
+              >
+                Reset
+              </Button>
+            </div>
+          </div>
+
           {showForm && (
             <div className="grid md:grid-cols-2 gap-4 mb-6 p-4 bg-accent/5 rounded-lg">
               <div className="md:col-span-2">
@@ -439,9 +524,8 @@ const Budget: React.FC = () => {
                 <div className="flex gap-3 mt-2">
                   <Button
                     type="button"
-                    className={`flex-1 ${
-                      transactionType === "expense" ? buttonClassName : ""
-                    }`}
+                    className={`flex-1 ${transactionType === "expense" ? buttonClassName : ""
+                      }`}
                     variant={
                       transactionType === "expense" ? "default" : "outline"
                     }
@@ -470,11 +554,10 @@ const Budget: React.FC = () => {
                         category: "",
                       });
                     }}
-                    className={`flex-1 ${
-                      transactionType === "income"
-                        ? "bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all"
-                        : ""
-                    }`}
+                    className={`flex-1 ${transactionType === "income"
+                      ? "bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md hover:text-white hover:shadow-lg transition-all"
+                      : ""
+                      }`}
                   >
                     <ArrowUpCircle className="w-4 h-4 mr-2" />
                     Income
@@ -579,36 +662,45 @@ const Budget: React.FC = () => {
           )}
 
           {/* Transaction List */}
-          {transactions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <PieChart className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No transactions yet. Add one to get started!</p>
+          {filteredTransactions.length === 0 ? (
+            <div className="text-center py-12 bg-foreground/[0.02] rounded-2xl border border-dashed border-foreground/10">
+              <PieChart className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p className="text-muted-foreground font-medium">No transactions found match your filters.</p>
+              <Button
+                variant="link"
+                onClick={() => {
+                  setFilterType("all");
+                  setFilterCategory("all");
+                  setDateRange({ start: "", end: "" });
+                }}
+                className="text-blue-600 mt-2"
+              >
+                Clear all filters
+              </Button>
             </div>
           ) : (
             <>
               <div className="space-y-3">
                 {(showAllTransactions
-                  ? transactions
-                  : transactions.slice(0, 10)
+                  ? filteredTransactions
+                  : filteredTransactions.slice(0, 10)
                 ).map((t) => {
                   const isIncome = t.type === "income";
                   return (
                     <div
                       key={t.id}
-                      className={`relative flex items-center justify-between p-4 rounded-xl border transition-all duration-300 group overflow-hidden ${
-                        isIncome
-                          ? "bg-linear-to-r from-green-50/50 to-emerald-50/30 dark:from-green-950/20 dark:to-emerald-950/10 border-green-200/50 dark:border-green-800/30 hover:shadow-lg hover:shadow-green-100/50 dark:hover:shadow-green-900/20"
-                          : "bg-linear-to-r from-red-50/50 to-rose-50/30 dark:from-red-950/20 dark:to-rose-950/10 border-r-200/50 dark:border-red-800/30 hover:shadow-lg hover:shadow-red-100/50 dark:hover:shadow-red-900/20"
-                      } hover:scale-[1.01] hover:border-opacity-100`}
+                      className={`relative flex items-center justify-between p-4 rounded-xl border transition-all duration-300 group overflow-hidden ${isIncome
+                        ? "bg-linear-to-r from-green-50/50 to-emerald-50/30 dark:from-green-950/20 dark:to-emerald-950/10 border-green-200/50 dark:border-green-800/30 hover:shadow-lg hover:shadow-green-100/50 dark:hover:shadow-green-900/20"
+                        : "bg-linear-to-r from-red-50/50 to-rose-50/30 dark:from-red-950/20 dark:to-rose-950/10 border-r-200/50 dark:border-red-800/30 hover:shadow-lg hover:shadow-red-100/50 dark:hover:shadow-red-900/20"
+                        } hover:scale-[1.01] hover:border-opacity-100`}
                     >
                       <div className="flex items-center gap-4 flex-1 ml-2">
                         {/* Icon with gradient background */}
                         <div
-                          className={`p-2.5 rounded-xl ${
-                            isIncome
-                              ? "bg-linear-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-200/50 dark:shadow-green-900/30"
-                              : "bg-linear-to-br from-red-400 to-rose-500 shadow-lg shadow-red-200/50 dark:shadow-red-900/30"
-                          }`}
+                          className={`p-2.5 rounded-xl ${isIncome
+                            ? "bg-linear-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-200/50 dark:shadow-green-900/30"
+                            : "bg-linear-to-br from-red-400 to-rose-500 shadow-lg shadow-red-200/50 dark:shadow-red-900/30"
+                            }`}
                         >
                           {isIncome ? (
                             <ArrowUpCircle className="w-5 h-5 text-white" />
@@ -623,11 +715,10 @@ const Budget: React.FC = () => {
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span
-                              className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                                isIncome
-                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                  : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                              }`}
+                              className={`text-xs font-medium px-2 py-0.5 rounded-full ${isIncome
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                }`}
                             >
                               {t.category}
                             </span>
@@ -645,11 +736,10 @@ const Budget: React.FC = () => {
                       <div className="flex items-center gap-3">
                         {/* Amount with gradient text */}
                         <p
-                          className={`text-lg font-bold bg-linear-to-r ${
-                            isIncome
-                              ? "from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400"
-                              : "from-red-600 to-rose-600 dark:from-red-400 dark:to-rose-400"
-                          } bg-clip-text text-transparent`}
+                          className={`text-lg font-bold bg-linear-to-r ${isIncome
+                            ? "from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400"
+                            : "from-red-600 to-rose-600 dark:from-red-400 dark:to-rose-400"
+                            } bg-clip-text text-transparent`}
                         >
                           {isIncome ? "+" : "-"}₹
                           {Number(t.amount).toLocaleString()}
@@ -682,7 +772,7 @@ const Budget: React.FC = () => {
                   );
                 })}
               </div>
-              {transactions.length > 10 && (
+              {filteredTransactions.length > 10 && (
                 <Button
                   variant="outline"
                   onClick={() => setShowAllTransactions(!showAllTransactions)}
@@ -696,7 +786,7 @@ const Budget: React.FC = () => {
                   ) : (
                     <>
                       <ChevronDown className="w-4 h-4 mr-2" />
-                      View All {transactions.length} Transactions
+                      View All {filteredTransactions.length} Transactions
                     </>
                   )}
                 </Button>
@@ -739,7 +829,7 @@ const Budget: React.FC = () => {
           </div>
 
           {/* Interactive Charts */}
-          <SpendingCharts transactions={transactions} analysis={analysis} />
+          <SpendingCharts transactions={filteredTransactions} analysis={analysis} />
         </Card>
 
         {/* Edit Transaction Dialog */}
