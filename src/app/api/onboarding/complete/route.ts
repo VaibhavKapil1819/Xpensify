@@ -8,12 +8,13 @@ import { RiskLevel, LearningPreference } from '@prisma/client';
 const onboardingSchema = z.object({
     primaryGoal: z.string().optional(),
     riskLevel: z.enum(['conservative', 'moderate', 'aggressive']),
-    learningPreference: z.enum(['visual', 'text', 'interactive', 'mixed']),
+    knowledgeLevel: z.enum(['beginner', 'intermediate', 'advanced']),
+    interests: z.array(z.string()),
+    currency: z.string().length(3),
 });
 
 export async function POST(request: NextRequest) {
     try {
-        // Get current user from JWT token
         const currentUser = await getCurrentUser();
 
         if (!currentUser) {
@@ -23,11 +24,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Parse and validate request body
         const body = await request.json();
-        const validatedData = onboardingSchema.parse(body);
-
-        const { primaryGoal, riskLevel, learningPreference } = validatedData;
+        const { primaryGoal, riskLevel, knowledgeLevel, interests, currency } = onboardingSchema.parse(body);
 
         // Update user profile with onboarding data
         const updatedProfile = await prisma.profile.update({
@@ -35,8 +33,21 @@ export async function POST(request: NextRequest) {
             data: {
                 primary_goal: primaryGoal || null,
                 risk_level: riskLevel as RiskLevel,
-                learning_preference: learningPreference as LearningPreference,
+                currency: currency,
                 updated_at: new Date(),
+                // Also update UserLearningPreferences if we have it
+                learning_preferences: {
+                    upsert: {
+                        create: {
+                            knowledge_level: knowledgeLevel,
+                            preferred_topics: interests,
+                        },
+                        update: {
+                            knowledge_level: knowledgeLevel,
+                            preferred_topics: interests,
+                        }
+                    }
+                }
             },
             select: {
                 id: true,
@@ -51,6 +62,23 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        // Initialize user streak record if it doesn't exist
+        try {
+            await prisma.userStreak.upsert({
+                where: { user_id: currentUser.userId },
+                create: {
+                    user_id: currentUser.userId,
+                    current_streak: 0,
+                    longest_streak: 0,
+                    total_lessons_completed: 0,
+                    badges: [],
+                },
+                update: {},
+            });
+        } catch (streakError) {
+            console.error('Error creating user streak:', streakError);
+        }
+
         // Create initial goal if primary goal was provided
         let createdGoal = null;
         if (primaryGoal && primaryGoal.trim()) {
@@ -63,31 +91,12 @@ export async function POST(request: NextRequest) {
                         category: 'savings',
                         status: 'active',
                         current_amount: 0,
-                        target_amount: 10000, // Default target
+                        target_amount: 1000,
                     },
                 });
             } catch (goalError) {
                 console.error('Error creating goal:', goalError);
-                // Don't fail onboarding if goal creation fails
             }
-        }
-
-        // Initialize user streak record if it doesn't exist
-        try {
-            await prisma.userStreak.upsert({
-                where: { user_id: currentUser.userId },
-                create: {
-                    user_id: currentUser.userId,
-                    current_streak: 0,
-                    longest_streak: 0,
-                    total_lessons_completed: 0,
-                    badges: [],
-                },
-                update: {}, // Do nothing if already exists
-            });
-        } catch (streakError) {
-            console.error('Error creating user streak:', streakError);
-            // Don't fail onboarding if streak creation fails
         }
 
         return NextResponse.json({
@@ -99,9 +108,8 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         if (error instanceof z.ZodError) {
-            const firstError = error.issues[0];
             return NextResponse.json(
-                { error: firstError?.message || 'Validation error' },
+                { error: error.issues[0].message || 'Validation error' },
                 { status: 400 }
             );
         }

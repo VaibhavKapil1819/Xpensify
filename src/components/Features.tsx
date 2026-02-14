@@ -165,7 +165,7 @@ const Features = () => {
                       <span className="text-blue-600 font-bold">82%</span>
                     </div>
                     <div className="mt-4 h-2.5 w-full rounded-full bg-foreground/10 overflow-hidden">
-                      <div className="h-full w-[82%] rounded-full bg-[var(--gradient-accent)] shadow-[var(--shadow-glow)] animate-shimmer" />
+                      <div className="h-full w-[82%] rounded-full bg-[var(--gradient-green)] shadow-[var(--shadow-green-glow)] animate-shimmer-green" />
                     </div>
                   </div>
                   <div className="rounded-2xl border border-[hsl(var(--glass-border))] bg-[hsl(var(--glass-bg))] p-6 backdrop-blur-xl shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-elegant)] transition-all duration-300">
