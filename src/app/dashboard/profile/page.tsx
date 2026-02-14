@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import DashboardNav from "@/components/DashboardNav";
+import { ProfileSkeleton } from "@/components/DashboardSkeletons";
 import { toast } from "sonner";
 import {
     User,
@@ -99,11 +100,10 @@ export default function ProfilePage() {
     };
 
     if (fetching) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background pattern-grid">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-            </div>
-        );
+        return (<>
+            <DashboardNav />
+            <ProfileSkeleton />
+        </>);
     }
 
     return (
@@ -188,8 +188,8 @@ export default function ProfilePage() {
                                                 <label
                                                     htmlFor={level}
                                                     className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all cursor-pointer text-center h-20 ${riskLevel === level
-                                                            ? 'bg-blue-600/10 border-blue-500 text-blue-600 shadow-sm'
-                                                            : 'bg-foreground/[0.02] border-foreground/5 text-foreground/40 hover:border-foreground/20'
+                                                        ? 'bg-blue-600/10 border-blue-500 text-blue-600 shadow-sm'
+                                                        : 'bg-foreground/[0.02] border-foreground/5 text-foreground/40 hover:border-foreground/20'
                                                         }`}
                                                 >
                                                     <span className="text-xs font-bold uppercase tracking-wider">{level}</span>
@@ -208,8 +208,8 @@ export default function ProfilePage() {
                                                 <label
                                                     htmlFor={`k-${level}`}
                                                     className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all cursor-pointer text-center h-20 ${knowledgeLevel === level
-                                                            ? 'bg-blue-600/10 border-blue-500 text-blue-600 shadow-sm'
-                                                            : 'bg-foreground/[0.02] border-foreground/5 text-foreground/40 hover:border-foreground/20'
+                                                        ? 'bg-blue-600/10 border-blue-500 text-blue-600 shadow-sm'
+                                                        : 'bg-foreground/[0.02] border-foreground/5 text-foreground/40 hover:border-foreground/20'
                                                         }`}
                                                 >
                                                     <span className="text-xs font-bold uppercase tracking-wider">{level}</span>
@@ -247,8 +247,8 @@ export default function ProfilePage() {
                                                 <label
                                                     htmlFor={cur.code}
                                                     className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${currency === cur.code
-                                                            ? 'bg-blue-600/10 border-blue-500 text-blue-600'
-                                                            : 'bg-foreground/[0.02] border-foreground/5 text-foreground/60 hover:border-foreground/20'
+                                                        ? 'bg-blue-600/10 border-blue-500 text-blue-600'
+                                                        : 'bg-foreground/[0.02] border-foreground/5 text-foreground/60 hover:border-foreground/20'
                                                         }`}
                                                 >
                                                     <span className="font-bold">{cur.code}</span>
