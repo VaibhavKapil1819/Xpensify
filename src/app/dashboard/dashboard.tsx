@@ -24,6 +24,8 @@ import { cn } from "@/lib/utils";
 import DashboardNav from "@/components/DashboardNav";
 import { DashboardSkeleton } from "@/components/DashboardSkeletons";
 import FinancialNews from "@/components/FinancialNews";
+import Image from "next/image";
+
 
 import type {
   DashboardProfile,
@@ -569,15 +571,28 @@ export default function Dashboard() {
           </main>
 
           {/* Floating Action Button */}
-          <div className="fixed bottom-6 right-6 z-40 group">
+          <div className="fixed bottom-6 right-9 z-40 group">
+            {/* Hover Message */}
+            <div className="absolute bottom-full mb-4 right-0 transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
+              <div className="relative bg-gradient-to-r from-blue-500 to-blue-400 text-white px-4 py-2 rounded-xl shadow-2xl border border-blue-400/20 text-sm font-semibold whitespace-nowrap">
+                Chat with Xpencify friend
+                <div className="absolute top-full right-6 -mt-1 w-3 h-3 bg-blue-500 border-r border-b border-blue-300/20 transform rotate-45" />
+              </div>
+            </div>
+
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full blur-xl opacity-0 group-hover:opacity-75 transition-opacity duration-300 animate-pulse" />
             <Button
               size="lg"
-              className="relative rounded-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-2xl hover:shadow-2xl transition-all duration-300 group-hover:scale-110"
+              className="relative  rounded-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-600 hover:to-blue-800 text-white shadow-2xl hover:shadow-2xl transition-all duration-300 group-hover:scale-110 p-0 overflow-hidden w-16 h-16"
               onClick={() => navigate.push("/chat")}
             >
-              <MessageCircle className="w-5 h-5 mr-2" />
-              Chat with Finley
+              <Image
+                src="/assets/aibot.png"
+                alt="AI Bot"
+                width={64}
+                height={64}
+                className="object-cover p-1"
+              />
             </Button>
           </div>
         </div>
