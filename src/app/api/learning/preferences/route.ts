@@ -5,13 +5,13 @@ import { getCurrentUser } from '@/lib/auth';
 
 // Helper to check if error is a database connection error
 function isDatabaseConnectionError(error: any): boolean {
-    return error?.code === 'P1001' || 
-           error?.message?.includes('Can\'t reach database server') ||
-           error?.message?.includes('connection');
+    return error?.code === 'P1001' ||
+        error?.message?.includes('Can\'t reach database server') ||
+        error?.message?.includes('connection');
 }
 
 // GET /api/learning/preferences - Get user's learning preferences
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
     try {
         const currentUser = await getCurrentUser();
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Error fetching learning preferences:', error);
-        
+
         // Handle database connection errors gracefully
         if (isDatabaseConnectionError(error)) {
             console.warn('Database connection unavailable, returning default preferences');

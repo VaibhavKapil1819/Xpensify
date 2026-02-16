@@ -5,9 +5,9 @@ import { getCurrentUser } from '@/lib/auth';
 
 // Helper to check if error is a database connection error
 function isDatabaseConnectionError(error: any): boolean {
-    return error?.code === 'P1001' || 
-           error?.message?.includes('Can\'t reach database server') ||
-           error?.message?.includes('connection');
+    return error?.code === 'P1001' ||
+        error?.message?.includes('Can\'t reach database server') ||
+        error?.message?.includes('connection');
 }
 
 // GET /api/learning/conversations - Get user's conversation history
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Error fetching conversations:', error);
-        
+
         // Handle database connection errors gracefully
         if (isDatabaseConnectionError(error)) {
             console.warn('Database connection unavailable, returning empty conversations');
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 }
 
 // DELETE /api/learning/conversations - Clear conversation history
-export async function DELETE(request: NextRequest) {
+export async function DELETE(_request: NextRequest) {
     try {
         const currentUser = await getCurrentUser();
 

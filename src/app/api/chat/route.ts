@@ -3,7 +3,6 @@ import { google } from "@ai-sdk/google";
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { streamText as streamTextLearning } from 'ai';
 // Allow streaming responses up to 60 seconds for course generation
 export const maxDuration = 60;
 
@@ -151,7 +150,7 @@ Great! I've prepared your personalized course. Start with Module 1 and work thro
 export async function POST(req: NextRequest) {
     // Check if this is a learning coach request by checking headers or body
     const body = await req.json();
-    const { messages, model, webSearch, isLearningCoach } = body;
+    const { messages, model: _model, webSearch, isLearningCoach } = body;
 
     // If it's a learning coach request, handle it directly here to preserve auth context
     if (isLearningCoach) {
@@ -167,13 +166,12 @@ export async function POST(req: NextRequest) {
 
             // Fetch user context
             let preferences = null;
-            let conversations: any[] = [];
             let progress: any[] = [];
             let streak = null;
             let recommendations: any[] = [];
 
             try {
-                [preferences, conversations, progress, streak, recommendations] = await Promise.all([
+                [preferences, , progress, streak, recommendations] = await Promise.all([
                     prisma.userLearningPreferences.findUnique({
                         where: { user_id: currentUser.userId },
                     }).catch(() => null),
@@ -249,14 +247,14 @@ export async function POST(req: NextRequest) {
 
             // Stream AI response
             const systemPrompt = LEARNING_COACH_SYSTEM_PROMPT + (contextInfo ? `\n\n${contextInfo}` : '');
-            const result = streamTextLearning({
+            const result = streamText({
                 model: google('gemini-2.5-flash'),
                 messages: modelMessages,
                 temperature: 0.7,
                 system: systemPrompt,
                 // Note: Rely on system prompt to enforce concise responses (2-3 modules, brief content)
                 // Increased maxDuration to 60s to allow complete course JSON generation
-                onFinish: async ({ text }) => {
+                onFinish: async ({ text }: { text: string }) => {
                     try {
                         await prisma.learningConversation.create({
                             data: {

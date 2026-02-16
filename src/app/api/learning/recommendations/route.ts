@@ -5,9 +5,9 @@ import { getCurrentUser } from '@/lib/auth';
 
 // Helper to check if error is a database connection error
 function isDatabaseConnectionError(error: any): boolean {
-    return error?.code === 'P1001' || 
-           error?.message?.includes('Can\'t reach database server') ||
-           error?.message?.includes('connection');
+    return error?.code === 'P1001' ||
+        error?.message?.includes('Can\'t reach database server') ||
+        error?.message?.includes('connection');
 }
 
 // GET /api/learning/recommendations - Get user's topic recommendations
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Error fetching recommendations:', error);
-        
+
         // Handle database connection errors gracefully
         if (isDatabaseConnectionError(error)) {
             console.warn('Database connection unavailable, returning empty recommendations');
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/learning/recommendations - Generate new recommendations
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
     try {
         const currentUser = await getCurrentUser();
 
@@ -84,15 +84,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Get user's progress and preferences
-        const [progress, preferences, streak] = await Promise.all([
+        const [progress, preferences] = await Promise.all([
             prisma.learningProgress.findMany({
                 where: { user_id: currentUser.userId },
                 orderBy: { created_at: 'desc' },
             }),
             prisma.userLearningPreferences.findUnique({
-                where: { user_id: currentUser.userId },
-            }),
-            prisma.userStreak.findUnique({
                 where: { user_id: currentUser.userId },
             }),
         ]);
@@ -152,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Error generating recommendations:', error);
-        
+
         // Handle database connection errors gracefully
         if (isDatabaseConnectionError(error)) {
             console.warn('Database connection unavailable, cannot generate recommendations');
@@ -197,7 +194,7 @@ export async function PATCH(request: NextRequest) {
             );
         }
 
-        const recommendation = await prisma.topicRecommendation.updateMany({
+        await prisma.topicRecommendation.updateMany({
             where: {
                 user_id: currentUser.userId,
                 topic_id: topic_id,

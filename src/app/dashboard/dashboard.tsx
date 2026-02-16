@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 import {
   Target,
   Plus,
-  MessageCircle,
   Activity,
   Zap,
   Award,
@@ -36,7 +35,6 @@ import type {
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 
 import { insightsSchema } from "../api/ai/dashboard-insights/schema";
-import { progressClassName } from "@/models/constants";
 
 // Cache configuration
 
@@ -153,7 +151,7 @@ export default function Dashboard() {
 
   const pendingCacheRef = useRef(false);
 
-  const { submit, object, isLoading, error, stop } = useObject({
+  const { submit, object, isLoading } = useObject({
     api: "/api/ai/dashboard-insights",
 
     schema: insightsSchema,
@@ -455,7 +453,7 @@ export default function Dashboard() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {goals.slice(0, 5).map((goal, index) => {
+                        {goals.slice(0, 5).map((goal, _index) => {
                           const targetAmount = Number(goal.target_amount || 0);
                           const currentAmount = Number(goal.current_amount);
                           const progress =

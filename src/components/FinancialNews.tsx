@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Loader2, RefreshCw, ChevronRight, TrendingUp, PiggyBank, DollarSign } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, RefreshCw, ChevronRight, TrendingUp, PiggyBank, DollarSign } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import Image from "next/image";
@@ -111,7 +110,7 @@ export default function FinancialNews() {
   // Track whether we need to cache data (true when fetching fresh data)
   const pendingCacheRef = useRef(false);
 
-  const { submit, object, isLoading, error, stop } = useObject({
+  const { submit, object, isLoading } = useObject({
     api: "/api/ai/generate-news",
     schema: financialNewsSchema,
   });

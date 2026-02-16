@@ -137,7 +137,7 @@ export default function SpendingCharts({ transactions, analysis }: SpendingChart
                                         paddingAngle={5}
                                         dataKey="value"
                                     >
-                                        {categoryData.map((entry, index) => (
+                                        {categoryData.map((_entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
@@ -203,9 +203,10 @@ export default function SpendingCharts({ transactions, analysis }: SpendingChart
                 </Card>
             </div>
 
+
             {/* Spending Trends Line Chart */}
             <Card className="p-6">
-                <h4 className="font-semibold mb-4">Spending Trends (Last 30 Days)</h4>
+                <h4 className="font-semibold mb-4">Spending Trend's (Last 30 Days)</h4>
                 <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={trendData}>
                         <CartesianGrid strokeDasharray="3 3" />

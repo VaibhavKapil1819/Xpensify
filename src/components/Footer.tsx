@@ -1,8 +1,5 @@
 "use client";
-import { Heart, Linkedin, Mail, Twitter, Lock } from "lucide-react";
-import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Heart, Mail, Lock } from "lucide-react";
 
 const Footer = () => {
   return (

@@ -6,12 +6,11 @@ import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
     try {
-        const currentUser = await getCurrentUser();
-        if (!currentUser) {
+        if (!(await getCurrentUser())) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { file, fileName, fileType } = await req.json();
+        const { file, fileName } = await req.json();
 
         if (!file) {
             return NextResponse.json({ error: "No file provided" }, { status: 400 });

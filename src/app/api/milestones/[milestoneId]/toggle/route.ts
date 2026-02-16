@@ -11,7 +11,7 @@ interface RouteContext {
 
 // PATCH /api/milestones/[milestoneId]/toggle - Toggle milestone completion status
 export async function PATCH(
-  request: NextRequest,
+  _request: NextRequest,
   context: RouteContext
 ) {
   try {
@@ -83,15 +83,15 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       milestone: updatedMilestone,
-      message: newCompletionStatus 
-        ? 'Milestone completed! 🎉' 
+      message: newCompletionStatus
+        ? 'Milestone completed! 🎉'
         : 'Milestone reopened',
     });
 
   } catch (error) {
     console.error('Error toggling milestone:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to update milestone',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

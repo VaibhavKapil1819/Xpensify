@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
 // GET /api/learning/streak - Get user's learning streak
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const currentUser = await getCurrentUser();
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching user streak:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch user streak',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

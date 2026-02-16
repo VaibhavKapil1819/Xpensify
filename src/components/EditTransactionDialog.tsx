@@ -113,7 +113,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = memo(
           throw new Error(data.error || "Failed to update transaction");
         }
 
-        toast.success("Transaction updated successfully");
+        toast.success("Transaction updated successfully ");
         onTransactionUpdated(data.transaction);
         onOpenChange(false);
       } catch (error: any) {

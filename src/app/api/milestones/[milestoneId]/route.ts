@@ -11,7 +11,7 @@ interface RouteContext {
 
 // PATCH /api/milestones/[milestoneId] - Toggle milestone completion
 export async function PATCH(
-  request: NextRequest,
+  _request: NextRequest,
   context: RouteContext
 ) {
   try {
@@ -77,4 +77,3 @@ export async function PATCH(
 }
 
 
- 

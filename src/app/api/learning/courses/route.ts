@@ -5,13 +5,13 @@ import { getCurrentUser } from '@/lib/auth';
 
 // Helper to check if error is a database connection error
 function isDatabaseConnectionError(error: any): boolean {
-    return error?.code === 'P1001' || 
-           error?.message?.includes('Can\'t reach database server') ||
-           error?.message?.includes('connection');
+    return error?.code === 'P1001' ||
+        error?.message?.includes('Can\'t reach database server') ||
+        error?.message?.includes('connection');
 }
 
 // GET /api/learning/courses - Fetch all user's saved courses
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
     try {
         const currentUser = await getCurrentUser();
 
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         });
     } catch (error: any) {
         console.error('Error fetching courses:', error);
-        
+
         // Handle database connection errors gracefully
         if (isDatabaseConnectionError(error)) {
             console.warn('Database connection unavailable, returning empty courses list');
@@ -87,15 +87,15 @@ export async function POST(req: NextRequest) {
         let existingCourse;
         try {
             existingCourse = await prisma.userCourse.findFirst({
-            where: {
-                user_id: currentUser.userId,
-                title: course.title,
-            },
-        });
+                where: {
+                    user_id: currentUser.userId,
+                    title: course.title,
+                },
+            });
         } catch (dbError: any) {
             if (isDatabaseConnectionError(dbError)) {
                 return NextResponse.json(
-                    { 
+                    {
                         error: 'Database temporarily unavailable',
                         message: 'Cannot save course. Please try again when the database connection is restored.',
                     },
@@ -133,10 +133,10 @@ export async function POST(req: NextRequest) {
         });
     } catch (error: any) {
         console.error('Error saving course:', error);
-        
+
         if (isDatabaseConnectionError(error)) {
             return NextResponse.json(
-                { 
+                {
                     error: 'Database temporarily unavailable',
                     message: 'Cannot save course. Please try again when the database connection is restored.',
                 },
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
 }
 
 // DELETE /api/learning/courses - Delete all courses (for clearing)
-export async function DELETE(req: NextRequest) {
+export async function DELETE(_req: NextRequest) {
     try {
         const currentUser = await getCurrentUser();
 

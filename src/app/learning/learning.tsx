@@ -50,7 +50,7 @@ import { Loader } from "@/components/ai-elements/loader";
 import { buttonClassName, progressClassName } from "@/models/constants";
 
 const LearningCoach: React.FC = () => {
-  const { user } = useAuth();
+  useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
   const [currentCourseId, setCurrentCourseId] = useState<string | null>(null);
   const [showCourseLibrary, setShowCourseLibrary] = useState(false);
@@ -216,8 +216,7 @@ const LearningCoach: React.FC = () => {
       }
     });
   }, [messages, status, detectedCourses, saveCourse]);
-  // Track if we've loaded initial conversations
-  const hasLoadedInitialConversations = React.useRef(false);
+
 
   // Show welcome screen if no preferences
   useEffect(() => {

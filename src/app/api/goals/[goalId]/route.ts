@@ -85,7 +85,7 @@ export async function PATCH(
 
 // DELETE /api/goals/[goalId] - Delete a specific goal
 export async function DELETE(
-    request: NextRequest,
+    _request: NextRequest,
     context: RouteContext
 ) {
     try {

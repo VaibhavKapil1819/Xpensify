@@ -1,5 +1,5 @@
 "use client";
-import { Target, Brain, BookOpen, TrendingUp, MessageCircle, BarChart3, Shield } from "lucide-react";
+import { Target, Brain, BookOpen, TrendingUp, MessageCircle, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useRef } from "react";
@@ -186,7 +186,7 @@ const Features = () => {
                       <span className="text-sm text-blue-600 font-medium pb-1">+7 this week</span>
                     </div>
                     <div className="grid grid-cols-6 gap-2 text-xs text-foreground/50">
-                      {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, idx) => (
+                      {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                         <div
                           key={day}
                           className="h-14 rounded-lg bg-gradient-to-t from-blue-600/25 via-blue-600/15 to-transparent border border-[hsl(var(--glass-border))] flex items-end justify-center pb-2 hover:from-blue-600/35 transition-all duration-300"

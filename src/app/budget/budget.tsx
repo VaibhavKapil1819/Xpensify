@@ -36,7 +36,7 @@ import BudgetSkeletion from "@/components/budgetSkeletion";
 import { buttonClassName } from "@/models/constants";
 import ConfirmDialog from "@/components/confirm-dialog/confirm-dialog";
 import InfoDialog from "@/components/info-dialog/info-dialog";
-import { se } from "date-fns/locale";
+
 
 const expenseCategories = [
   "Food & Dining",
@@ -62,7 +62,6 @@ const Budget: React.FC = () => {
   const { user } = useAuth();
   const navigate = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [budget, setBudget] = useState({ monthly: 0, categories: {} });
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [addingTransaction, setAddingTransaction] = useState(false);
@@ -77,7 +76,6 @@ const Budget: React.FC = () => {
   });
 
   // Delete Transaction
-  const [deletingTransaction, setDeletingTransaction] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string>("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
@@ -239,7 +237,7 @@ const Budget: React.FC = () => {
       const data = await Promise.all(responses.map((r) => r.json()));
 
       const successfulTransactions = data
-        .filter((d, i) => responses[i].ok)
+        .filter((_, i) => responses[i].ok)
         .map((d) => d.transaction);
 
       if (successfulTransactions.length > 0) {
@@ -249,7 +247,7 @@ const Budget: React.FC = () => {
         );
       }
 
-      const failures = data.filter((d, i) => !responses[i].ok);
+      const failures = data.filter((_, i) => !responses[i].ok);;
       if (failures.length > 0) {
         // Show the specific failure message from the server to help identify invalid dates
         const failureMessage = failures[0].error || "Validation error";
@@ -264,7 +262,6 @@ const Budget: React.FC = () => {
   };
 
   const handleDeleteTransaction = async (id: string) => {
-    setDeletingTransaction(true);
     try {
       const response = await fetch(`/api/transactions/${id}`, {
         method: "DELETE",
@@ -288,7 +285,6 @@ const Budget: React.FC = () => {
       toast.error(error.message || "Failed to delete transaction");
       setShowDeleteConfirm(false);
     } finally {
-      setDeletingTransaction(false);
       setTransactionToDelete("");
     }
   };
@@ -327,10 +323,7 @@ const Budget: React.FC = () => {
   const netBalance = totalIncome - totalExpenses;
 
   // Category totals for charts - still based on filtered data
-  const categoryTotals = filteredTransactions.reduce((acc, t) => {
-    acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
-    return acc;
-  }, {} as Record<string, number>);
+
 
   // Unique categories for filter dropdown to avoid key collisions
   const uniqueFilterCategories = Array.from(new Set([...expenseCategories, ...incomeCategories]));
