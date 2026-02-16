@@ -13,12 +13,10 @@ import {
     User,
     Mail,
     Target,
-    TrendingUp,
     DollarSign,
     BrainCircuit,
     Save,
-    Loader2,
-    ChevronRight
+    Loader2
 } from "lucide-react";
 
 export default function ProfilePage() {

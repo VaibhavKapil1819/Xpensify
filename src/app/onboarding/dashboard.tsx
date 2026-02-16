@@ -5,12 +5,10 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Target, TrendingUp, GraduationCap, DollarSign, BrainCircuit, Sparkles, Check, ChevronRight, ChevronLeft } from "lucide-react";
+import { Target, TrendingUp, DollarSign, BrainCircuit, Sparkles, Check, ChevronRight, ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { buttonClassName } from "@/models/constants";
 
 const Dashboard: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -188,8 +186,8 @@ const Dashboard: React.FC = () => {
                   key={option.id}
                   onClick={() => setRiskLevel(option.id as any)}
                   className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${riskLevel === option.id
-                      ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
-                      : 'bg-foreground/[0.02] border-foreground/5 hover:border-foreground/20'
+                    ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
+                    : 'bg-foreground/[0.02] border-foreground/5 hover:border-foreground/20'
                     }`}
                 >
                   <div className="flex-1">
@@ -236,8 +234,8 @@ const Dashboard: React.FC = () => {
                   key={option.id}
                   onClick={() => setKnowledgeLevel(option.id as any)}
                   className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${knowledgeLevel === option.id
-                      ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
-                      : 'bg-foreground/[0.02] border-foreground/5 hover:border-foreground/20'
+                    ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
+                    : 'bg-foreground/[0.02] border-foreground/5 hover:border-foreground/20'
                     }`}
                 >
                   <div className="flex-1">
@@ -281,8 +279,8 @@ const Dashboard: React.FC = () => {
                   key={option.id}
                   onClick={() => toggleInterest(option.id)}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${interests.includes(option.id)
-                      ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.05)]'
-                      : 'bg-foreground/[0.02] border-foreground/5 hover:border-foreground/20'
+                    ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.05)]'
+                    : 'bg-foreground/[0.02] border-foreground/5 hover:border-foreground/20'
                     }`}
                 >
                   <span className="text-2xl">{option.icon}</span>
@@ -320,8 +318,8 @@ const Dashboard: React.FC = () => {
                   key={option.code}
                   onClick={() => setCurrency(option.code)}
                   className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col items-center gap-2 ${currency === option.code
-                      ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
-                      : 'bg-foreground/[0.02] border-foreground/5 hover:border-foreground/20'
+                    ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
+                    : 'bg-foreground/[0.02] border-foreground/5 hover:border-foreground/20'
                     }`}
                 >
                   <span className={`text-3xl font-bold ${currency === option.code ? 'text-blue-500' : 'text-foreground/30'}`}>{option.symbol}</span>

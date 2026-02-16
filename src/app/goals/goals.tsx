@@ -30,7 +30,6 @@ import {
   DollarSign,
   CheckCircle2,
   Clock,
-  PiggyBank,
   TrendingUpIcon,
   CreditCard,
   Shield,
@@ -316,9 +315,9 @@ export default function Goals() {
           setSelectedGoal((prev) =>
             prev
               ? {
-                  ...prev,
-                  ai_completion_probability: aiData.completion_probability,
-                }
+                ...prev,
+                ai_completion_probability: aiData.completion_probability,
+              }
               : null,
           );
 
@@ -669,9 +668,8 @@ export default function Goals() {
                 return (
                   <Card
                     key={goal.id}
-                    className={`mac-card p-4 cursor-pointer transition-all hover:shadow-lg ${
-                      selectedGoal?.id === goal.id ? "ring-2 ring-blue-500" : ""
-                    }`}
+                    className={`mac-card p-4 cursor-pointer transition-all hover:shadow-lg ${selectedGoal?.id === goal.id ? "ring-2 ring-blue-500" : ""
+                      }`}
                     onClick={() => handleSelectGoal(goal)}
                   >
                     <div className="flex items-start gap-3 mb-3">
@@ -821,18 +819,16 @@ export default function Goals() {
                         {milestones.map((milestone, index) => (
                           <Card
                             key={milestone.id}
-                            className={`mac-card p-4 transition-all ${
-                              milestone.completed ? "opacity-60" : ""
-                            }`}
+                            className={`mac-card p-4 transition-all ${milestone.completed ? "opacity-60" : ""
+                              }`}
                           >
                             <div className="flex items-start gap-3">
                               <button
                                 onClick={() => toggleMilestone(milestone)}
-                                className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                                  milestone.completed
+                                className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${milestone.completed
                                     ? "bg-blue-600 border-blue-600"
                                     : "border-gray-300 hover:border-blue-600"
-                                }`}
+                                  }`}
                               >
                                 {milestone.completed && (
                                   <CheckCircle2 className="w-4 h-4 text-white" />

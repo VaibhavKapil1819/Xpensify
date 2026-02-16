@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
+
 import { useAuth } from '@/contexts/AuthContext';
-import { buttonClassName } from '@/models/constants';
+import { } from '@/models/constants';
 import { Eye, EyeOff, Check, X, ArrowLeft, Loader2, Sparkles, ShieldCheck, Zap, HeartPulse } from 'lucide-react';
 import Image from 'next/image';
 

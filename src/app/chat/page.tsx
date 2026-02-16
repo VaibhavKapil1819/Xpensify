@@ -5,37 +5,19 @@ import {
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
 import {
-  Message,
-  MessageContent,
   MessageResponse,
-  MessageActions,
-  MessageAction,
 } from '@/components/ai-elements/message';
 import {
   PromptInput,
-  PromptInputActionAddAttachments,
-  PromptInputActionMenu,
-  PromptInputActionMenuContent,
-  PromptInputActionMenuTrigger,
-  PromptInputAttachment,
-  PromptInputAttachments,
   PromptInputBody,
-  PromptInputButton,
-  PromptInputHeader,
   type PromptInputMessage,
-  PromptInputSelect,
-  PromptInputSelectContent,
-  PromptInputSelectItem,
-  PromptInputSelectTrigger,
-  PromptInputSelectValue,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputFooter,
-  PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
-import { Fragment, useState, useEffect, memo, useCallback, useRef } from 'react';
+import { useState, useEffect, memo, useCallback, useRef } from 'react';
 import { useChat } from '@ai-sdk/react';
-import { CopyIcon, GlobeIcon, RefreshCcwIcon, Sparkles, TrendingUp, Wallet, Target, CheckIcon } from 'lucide-react';
+import { CopyIcon, RefreshCcwIcon, Sparkles, TrendingUp, Wallet, Target, CheckIcon } from 'lucide-react';
 import {
   Source,
   Sources,
@@ -47,7 +29,7 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from '@/components/ai-elements/reasoning';
-import { Loader } from '@/components/ai-elements/loader';
+
 import DashboardNav from '@/components/DashboardNav';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
@@ -229,8 +211,8 @@ TypingIndicator.displayName = 'TypingIndicator';
 
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
-  const [model, setModel] = useState<string>(models[0].value);
-  const [webSearch, setWebSearch] = useState(false);
+  const [model] = useState<string>(models[0].value);
+  const [webSearch] = useState(false);
   const { messages, sendMessage, status, regenerate, error } = useChat();
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);

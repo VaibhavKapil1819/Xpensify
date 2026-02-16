@@ -4,12 +4,7 @@ import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const navLinks = [
-  // { label: "Features", href: "#features" },
-  // { label: "How It Works", href: "#how-it-works" },
-  // { label: "Pricing", href: "#pricing" },
-  // { label: "About", href: "#about" },
-];
+
 
 const Navigation = () => {
   const [scrolled, setScrolled] = useState(false);

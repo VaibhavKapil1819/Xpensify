@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { z } from 'zod';
-import { RiskLevel, LearningPreference } from '@prisma/client';
+import { RiskLevel } from '@prisma/client';
 
 const onboardingSchema = z.object({
     primaryGoal: z.string().optional(),

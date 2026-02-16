@@ -11,7 +11,7 @@ interface RouteContext {
 
 // GET /api/goals/[goalId]/milestones - Load milestones for a specific goal
 export async function GET(
-    request: NextRequest,
+    _request: NextRequest,
     context: RouteContext
 ) {
     try {

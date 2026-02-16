@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 
 // GET /api/learning/courses/[id] - Get a specific course by ID
 export async function GET(
-    req: NextRequest,
+    _req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
@@ -62,8 +62,8 @@ export async function GET(
         } catch (error) {
             console.error('Error parsing course_data:', error);
             return NextResponse.json(
-                { 
-                    error: 'Failed to parse course data', 
+                {
+                    error: 'Failed to parse course data',
                     message: error instanceof Error ? error.message : 'Invalid course data format'
                 },
                 { status: 500 }
@@ -87,8 +87,8 @@ export async function GET(
     } catch (error: any) {
         console.error('Error fetching course:', error);
         return NextResponse.json(
-            { 
-                error: 'Failed to fetch course', 
+            {
+                error: 'Failed to fetch course',
                 message: error.message || 'Unknown error',
                 details: process.env.NODE_ENV === 'development' ? error.stack : undefined
             },
@@ -99,7 +99,7 @@ export async function GET(
 
 // DELETE /api/learning/courses/[id] - Delete a specific course
 export async function DELETE(
-    req: NextRequest,
+    _req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
@@ -148,8 +148,8 @@ export async function DELETE(
     } catch (error: any) {
         console.error('Error deleting course:', error);
         return NextResponse.json(
-            { 
-                error: 'Failed to delete course', 
+            {
+                error: 'Failed to delete course',
                 message: error.message || 'Unknown error'
             },
             { status: 500 }

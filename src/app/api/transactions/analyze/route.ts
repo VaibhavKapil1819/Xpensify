@@ -17,15 +17,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "No transactions to analyze" }, { status: 400 });
         }
 
-        const systemPrompt = `You are Finley, XPENSIFY's AI financial coach. Analyze the user's spending data and provide:
-    - A concise summary of their financial situation.
-    - 3-5 key insights based on their spending patterns.
-    - 3 actionable recommendations to improve their financial health.
-    - 2-3 specific savings opportunities.
-
-    Brevity is key. Be encouraging but direct.
-    User's Transactions: ${JSON.stringify(transactions)}`;
-
         const { object } = await generateObject({
             model: google("gemini-2.5-flash"),
             schema: analysisSchema,
@@ -49,7 +40,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             success: true,
             analysis: object,
-
         });
     } catch (error: any) {
         console.error("Error analyzing spending:", error);
